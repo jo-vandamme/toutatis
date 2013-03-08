@@ -4,3 +4,18 @@
 
 A small 32-bit operating system written
 for learning purposes.
+
+To create a floppy image using Toutatis bootloader use:
+- make floppy
+
+To create an iso image using GRUB use:
+- make iso
+
+To build and run the kernel as a floppy image with
+Toutatis bootloader:
+- make qemu or make q
+- make bochs or make b
+
+To build and run the kernel as an iso image using GRUB:
+- make qemu_iso or make qg
+- make bochs_iso or make bg
