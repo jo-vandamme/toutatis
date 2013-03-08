@@ -9,7 +9,7 @@
 # Floppy
 #----------------------------------------------------------------------------------------------------
 
-floppya: 1_44="sos.img", status=inserted
+floppya: 1_44="toutatis.img", status=inserted
 
 #----------------------------------------------------------------------------------------------------
 # Boot
@@ -25,3 +25,7 @@ log:    bochsout.txt
 error:  action=report
 info:   action=report
 mouse:  enabled=0
+
+keyboard_serial_delay: 250
+keyboard_paste_delay: 10000
+keyboard_mapping: enabled=0, map=

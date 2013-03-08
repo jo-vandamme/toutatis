@@ -1,9 +1,9 @@
 #ifndef __KERNEL_MULTIBOOT_H__
 #define __KERNEL_MULTIBOOT_H__
 
-#define MB_MAGIC                0x1badb002
-#define MB_FLAG_MEM             (1 << 0)
-#define MB_FLAG_DEVICE          (1 << 1)
+#define MB_MAGIC                0x2badb002
+#define MB_FLAG_MEMINFO         (1 << 0)
+#define MB_FLAG_BOOTDEV         (1 << 1)
 #define MB_FLAG_MMAP            (1 << 6)
 #define MB_FLAG_BTLDR_NAME      (1 << 9)
 

@@ -1,5 +1,11 @@
-default 0
-timeout 1
+default  0
+fallback 0
+timeout  20
+
+color cyan/blue white/blue
 
 title Toutatis
 kernel /boot/kernel.elf
+
+title Toutatis zipped
+kernel /boot/kernel.elf.zip

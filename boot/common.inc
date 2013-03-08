@@ -51,7 +51,7 @@
 %define MMAP_SEG        0x0000
 %define MMAP_OFF        0x1000
 
-%define BOOTLOADER_NAME "SOS Boot"
+%define BOOTLOADER_NAME "Toutatis Bootloader"
 %define STAGE2_NAME     "LOADER  BIN"
 %define KERNEL_NAME     "KERNEL  ELF"
 

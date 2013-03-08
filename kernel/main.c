@@ -24,18 +24,18 @@ void main(u32_t magic, multiboot_info_t *mbi, u32_t kernel_size)
         vga_init();
 
         print_banner((char *)mbi->boot_loader_name);
-        print_mmap(mbi);
 
         if (magic != MB_MAGIC) {
-                kprintf("\033\014Bad magic number\n");
+                kprintf("\033\014Bad magic number %#010x\n", magic);
                 goto error;
         }
+        print_mmap(mbi);
 
         arch_init();
         (void)kernel_size;
         pmm_init(mbi, (mbi->mem_upper + mbi->mem_lower) * 1024, kernel_size);
 
-        /*wait(1000);
+        wait(1000);
         attach_interrupt_handler(IRQ(0), my_func);
         sleep(500);
         attach_interrupt_handler(IRQ(0), my_func2);
@@ -46,7 +46,7 @@ void main(u32_t magic, multiboot_info_t *mbi, u32_t kernel_size)
         newline;
 
         attach_interrupt_handler(IRQ(1), my_func3);
-        enable_irq(1);*/
+        enable_irq(1);
 
 error:
         for (;;) ;
@@ -54,9 +54,9 @@ error:
 
 void print_banner(const char *loader)
 {
-        //vga_clear();
-        kprintf("\n  SOS kernel booting from %s\n"
-                "\033\016  --------------------------------\033\007\n", loader);
+        vga_clear();
+        kprintf("\n  Toutatis kernel booting from %s\n"
+                "\033\016  ------------------------------------------------\033\007\n", loader);
 }
 
 void print_mmap(const multiboot_info_t *mbi)
@@ -94,7 +94,7 @@ void print_mmap(const multiboot_info_t *mbi)
 void my_func(registers_t *r)
 {
         (void)r;
-        kprintf("\r%u", get_ticks_count());
+        kprintf("\033\012\r%u", get_ticks_count());
 }
 
 void my_func2(registers_t *r)

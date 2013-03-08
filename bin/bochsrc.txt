@@ -9,7 +9,7 @@ vgaromimage: file="/usr/share/bochs/VGABIOS-lgpl-latest"
 # Floppy
 #----------------------------------------------------------------------------------------------------
 
-floppya: 1_44="sos.img", status=inserted
+floppya: 1_44="toutatis.img", status=inserted
 
 #----------------------------------------------------------------------------------------------------
 # Boot

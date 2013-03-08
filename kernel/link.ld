@@ -13,7 +13,7 @@ SECTIONS
         .text : AT(kernel_phys) {
                 kernel_code = .;
                 *(.text)
-                *(.rodata)
+                *(.rodata*)
                 . = ALIGN(0x1000);
         }
 
@@ -27,6 +27,7 @@ SECTIONS
         /* Statically define, uninitialized values */
         .bss : AT(kernel_phys + (kernel_bss - kernel_code)) {
                 kernel_bss = .;
+                *(.COMMON)
                 *(.bss)
                 . = ALIGN(0x1000);
         }
