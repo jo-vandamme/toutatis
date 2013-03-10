@@ -1,11 +1,11 @@
 #ifndef __KERNEL_MULTIBOOT_H__
 #define __KERNEL_MULTIBOOT_H__
 
-#define MB_MAGIC                0x2badb002
-#define MB_FLAG_MEMINFO         (1 << 0)
-#define MB_FLAG_BOOTDEV         (1 << 1)
-#define MB_FLAG_MMAP            (1 << 6)
-#define MB_FLAG_BTLDR_NAME      (1 << 9)
+#define MULTIBOOT_MAGIC         0x2badb002
+#define MULTIBOOT_MEMINFO       (1 << 0)
+#define MULTIBOOT_BOOTDEV       (1 << 1)
+#define MULTIBOOT_MMAP          (1 << 6)
+#define MULTIBOOT_LOADER        (1 << 9)
 
 typedef struct __attribute__((packed))
 {
@@ -37,12 +37,12 @@ typedef struct __attribute__((packed))
 
 typedef struct __attribute__((packed))
 {
+        u32_t size;
         u32_t addr_low;
         u32_t addr_high;
         u32_t length_low;
         u32_t length_high;
         u32_t type;
-        u32_t acpi;
 } mmap_entry_t;
 
 #endif

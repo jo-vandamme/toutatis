@@ -106,6 +106,8 @@ stage2:
 
         mov     byte [boot_info + multiboot_info.boot_device], dl
         mov     word [boot_info + multiboot_info.boot_loader_name], loaderName
+        or      dword [boot_info + multiboot_info.flags], MULTIBOOT_BOOTDEV
+        or      dword [boot_info + multiboot_info.flags], MULTIBOOT_LOADER
 
         ; Make sure we print at (0,0)
         mov     byte [XPOS], 0
@@ -151,6 +153,7 @@ stage2:
         mul     bl
         mov     dword [boot_info + multiboot_info.mmap_addr], MMAP_SEG * 16 + MMAP_OFF
         mov     word [boot_info + multiboot_info.mmap_length], ax
+        or      dword [boot_info + multiboot_info.flags], MULTIBOOT_MMAP
 
         jmp     .load_kernel
     .mem_error:
@@ -239,6 +242,7 @@ pmode:
         shl     ebx, 6          ; multiply by 64
         add     eax, ebx
         mov     dword [boot_info + multiboot_info.memory_upper], eax ; number of KB for upper memory
+        or      dword [boot_info + multiboot_info.flags], MULTIBOOT_MEMINFO
 
         ; convert the ELF file to a linear binary so we can execute it
         ; unpack the ELF into where it needs to go
@@ -324,7 +328,7 @@ load_elf:
 
         ; the kernel is now loaded into high memory
         mov     ecx, [kernel_entry]
-        mov     eax, 0x1badb002                     ; multiboot header magic number
+        mov     eax, MULTIBOOT_MAGIC                ; multiboot header magic number
         mov     ebx, boot_info                      ; multiboot header pointer
         call    ecx                                 ; execute the kernel
 

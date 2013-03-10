@@ -23,17 +23,21 @@ void main(u32_t magic, multiboot_info_t *mbi, u32_t kernel_size)
 {
         vga_init();
 
-        print_banner((char *)mbi->boot_loader_name);
-
-        if (magic != MB_MAGIC) {
+        if (mbi->flags & MULTIBOOT_LOADER) {
+                print_banner((char *)mbi->boot_loader_name);
+        }
+        if (magic != MULTIBOOT_MAGIC) {
                 kprintf("\033\014Bad magic number %#010x\n", magic);
                 goto error;
         }
+        if (!(mbi->flags & MULTIBOOT_MEMINFO) || !(mbi->flags & MULTIBOOT_MMAP)) {
+                kprintf("\033\014No memory information\n");
+                goto error;
+        }
         print_mmap(mbi);
-
         arch_init();
-        (void)kernel_size;
         pmm_init(mbi, (mbi->mem_upper + mbi->mem_lower) * 1024, kernel_size);
+        (void)kernel_size;
 
         wait(1000);
         attach_interrupt_handler(IRQ(0), my_func);
@@ -75,18 +79,17 @@ void print_mmap(const multiboot_info_t *mbi)
                 if (mmap->type > 4)
                         mmap->type = 1;
 
-                size = ((mmap->length_high << 8) + mmap->length_low) / 1024;
+                size = mmap->length_low / 1024;
 
-                kprintf("\t\033\012%02u\033\012: \033\016%#010x\033\010:\033\016%#010x"
+                kprintf("    \033\012%02u: \033\016%#010x%010x\033\010:\033\016%#010x%010x"
                         "\033\010 -> %4u%s \033\010(%u - \033\007%s\033\010)\n",
-                        i++, (mmap->addr_high << 8) + mmap->addr_low,
-                        (mmap->addr_high << 8) + (mmap->length_high << 8)
-                        + mmap->addr_low + mmap->length_low - 1,
+                        i++, mmap->addr_high, mmap->addr_low,
+                        mmap->length_high, mmap->length_low,
                         (size > 1024) ? ((size / 1024 > 1024) ? size / 1024 / 1024 : size / 1024) : size,
                         (size > 1024) ? ((size / 1024 > 1024) ? "GB" : "MB") : "KB",
                         mmap->type, memory_types[mmap->type - 1]);
 
-                mmap = (mmap_entry_t *)((u32_t)mmap + 24);
+                mmap = (mmap_entry_t *)((u32_t)mmap + mmap->size + sizeof(mmap->size));
         }
         vga_print_str("\033\007\n");
 }

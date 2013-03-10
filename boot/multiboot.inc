@@ -5,6 +5,12 @@
 %ifndef __MULTIBOOT_INC_INCLUDED__
 %define __MULTIBOOT_INC_INCLUDED__
 
+%define MULTIBOOT_MAGIC         0x2badb002
+%define MULTIBOOT_MEMINFO       (1 << 0)
+%define MULTIBOOT_BOOTDEV       (1 << 1)
+%define MULTIBOOT_MMAP          (1 << 6)
+%define MULTIBOOT_LOADER        (1 << 9)
+
 struc multiboot_info
         .flags                  resd 1  ; required
         .memory_lower           resd 1  ; present if flags[0] is set
