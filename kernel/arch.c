@@ -4,7 +4,7 @@
 #include "idt.h"
 #include "pic.h"
 #include "pit.h"
-#include <vga.h>
+#include <logging.h>
 
 #define ACCESS_KCODE (GDT_ACCESS_PRESENT | GDT_ACCESS_RING0 | GDT_ACCESS_ALWAYS1 | GDT_ACCESS_RW | GDT_ACCESS_EXECUTE)
 #define ACCESS_UCODE (GDT_ACCESS_PRESENT | GDT_ACCESS_RING3 | GDT_ACCESS_ALWAYS1 | GDT_ACCESS_RW | GDT_ACCESS_EXECUTE)
@@ -283,15 +283,11 @@ void isr_handler(void *r)
         }
 
         if (stop) {
-                vga_set_attribute(0x0c00);
-                vga_print_str("Unhandled exception #");
-                vga_print_dec(regs->int_no);
+                kprintf(ERROR, "\033\014Unhandled exception #%u", regs->int_no);
                 if (regs->int_no < IRQ(0)) {
-                        vga_print_str(" (");
-                        vga_print_str(exception_messages[regs->int_no]);
-                        vga_print_str(")");
+                        kprintf(ERROR, " (%s)", exception_messages[regs->int_no]);
                 }
-                vga_print_str("\n");
+                kprintf(ERROR, "\n");
                 dump_registers(regs);
                 halt();
         }
@@ -303,14 +299,13 @@ void irq_handler(void *r)
         handler_t *h = 0;
 
         if (pic_acknowledge(regs->int_no)) {
-                vga_print_str("spurious IRQ");
+                kprintf(NOTICE, "Spurious IRQ");
                 return; /* ignore spurious IRQs */
         }
 
         h = get_interrupt_handler(IRQ(regs->int_no));
         if (!h) {
-                vga_print_str("no handler for IRQ #");
-                vga_print_dec(regs->int_no);
+                kprintf(WARNING, "No handler for IRQ #%u", regs->int_no);
                 return;
         }
         while (h) {
@@ -321,22 +316,19 @@ void irq_handler(void *r)
 
 static void dump_registers(registers_t *regs)
 {
-        vga_print_str("EAX: ");    vga_print_hex(regs->eax);
-        vga_print_str("\tEBX: ");  vga_print_hex(regs->ebx);
-        vga_print_str("\tECX: ");  vga_print_hex(regs->ecx); newline;
-        vga_print_str("EDX: ");    vga_print_hex(regs->edx);
-        vga_print_str("\tESI: ");  vga_print_hex(regs->esi);
-        vga_print_str("\tEDI: ");  vga_print_hex(regs->edi); newline;
-        vga_print_str("EBP: ");    vga_print_hex(regs->ebp);
-        vga_print_str("\tESP: ");  vga_print_hex(regs->esp);
-        vga_print_str("\tEIP: ");  vga_print_hex(regs->eip);
-        vga_print_str("EFL: ");    vga_print_hex(regs->eflags); newline;
-        vga_print_str("SS: ");     vga_print_hex(regs->ss);
-        vga_print_str("\tCS: ");   vga_print_hex(regs->cs);
-        vga_print_str("\tDS: ");   vga_print_hex(regs->ds);
-        vga_print_str("\tES: ");   vga_print_hex(regs->es);
-        vga_print_str("\tFS: ");   vga_print_hex(regs->fs);
-        vga_print_str("\tGS: ");   vga_print_hex(regs->gs); newline;
+        kprintf(ERROR,
+                "eax: %#010x ebx: %#010x\n"
+                "ecx: %#010x edx: %#010x\n"
+                "esi: %#010x edi: %#010x\n"
+                "ebp: %#010x esp: %#010x\n"
+                "eip: %#010x efl: %#010x\n"
+                "ss: %#04x cs: %#04x ds: %#04x\n"
+                "es: %#04x fs: %#04x gs: %#04x\n",
+                regs->eax, regs->ebx, regs->ecx, regs->edx,
+                regs->esi, regs->edi, regs->ebp, regs->esp,
+                regs->eip, regs->eflags,
+                regs->ss, regs->cs, regs->ds,
+                regs->es, regs->fs, regs->gs);
 }
 
 char *exception_messages[] =

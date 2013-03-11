@@ -15,6 +15,6 @@ typedef enum
 
 void logging_init();
 
-int kprintf(const char *fmt, ...);
+int kprintf(log_level_t level, const char *fmt, ...);
 
 #endif

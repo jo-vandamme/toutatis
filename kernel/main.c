@@ -6,12 +6,7 @@
 #include <serial.h>
 #include <driver.h>
 
-void print_banner(const char *loader);
 void print_mmap(const multiboot_info_t *mbi);
-void my_func(registers_t *r);
-void my_func2(registers_t *r);
-void my_func3(registers_t *r);
-void wait(u32_t ms);
 
 static device_t *vga_driver;
 static device_t *com_driver;
@@ -31,14 +26,14 @@ void main(u32_t magic, multiboot_info_t *mbi, u32_t kernel_size)
         logging_init(vga_driver, com_driver);
 
         if (mbi->flags & MULTIBOOT_LOADER) {
-                print_banner((char *)mbi->boot_loader_name);
+                kprintf(INFO, "Toutatis kernel booting from %s\n", (char *)mbi->boot_loader_name);
         }
         if (magic != MULTIBOOT_MAGIC) {
-                kprintf("\033\014Bad magic number %#010x\n", magic);
+                kprintf(CRITICAL, "\033\014Bad magic number %#010x\n", magic);
                 goto error;
         }
         if (!(mbi->flags & MULTIBOOT_MEMINFO) || !(mbi->flags & MULTIBOOT_MMAP)) {
-                kprintf("\033\014No memory information\n");
+                kprintf(CRITICAL, "\033\014No memory information\n");
                 goto error;
         }
 
@@ -52,16 +47,11 @@ error:
         for (;;) ;
 }
 
-void print_banner(const char *loader)
-{
-        kprintf("Toutatis kernel booting from %s\n", loader);
-}
-
 void print_mmap(const multiboot_info_t *mbi)
 {
         unsigned long size;
 
-        kprintf("\033\010Lower memory: \033\007%uKB\033\010 - Upper memory: \033\007%uMB\033\010\n",
+        kprintf(INFO, "\033\010Lower memory: \033\007%uKB\033\010 - Upper memory: \033\007%uMB\033\010\n",
                 mbi->mem_lower, mbi->mem_upper / 1024);
 
         mmap_entry_t * mmap = (mmap_entry_t *)mbi->mmap_addr;
@@ -73,7 +63,8 @@ void print_mmap(const multiboot_info_t *mbi)
 
                 size = mmap->length_low / 1024;
 
-                kprintf("\033\012%02u: \033\016%#010x%010x\033\010:\033\016%#010x%010x"
+                kprintf(INFO,
+                        "\033\012%02u: \033\016%#010x%010x\033\010:\033\016%#010x%010x"
                         "\033\010 -> %4u%s \033\010(%u - \033\007%s\033\010)\n",
                         i++, mmap->addr_high, mmap->addr_low,
                         mmap->length_high, mmap->length_low,
@@ -83,6 +74,6 @@ void print_mmap(const multiboot_info_t *mbi)
 
                 mmap = (mmap_entry_t *)((u32_t)mmap + mmap->size + sizeof(mmap->size));
         }
-        kprintf("\033\007\n");
+        kprintf(INFO, "\033\007\n");
 }
 

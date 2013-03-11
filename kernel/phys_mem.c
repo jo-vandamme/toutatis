@@ -105,7 +105,7 @@ void pmm_init(multiboot_info_t* mbi, size_t mem_size, size_t kernel_size)
         }
         set_region(0x100000, ksize + msize);
 
-        kprintf("\033\010[pmm] \033\007%u\033\010 blocks of %uKB - \033\007%u\033\010 used - \033\007%u\033\010 free\n",
+        kprintf(INFO, "\033\010[pmm] \033\007%u\033\010 blocks of %uKB - \033\007%u\033\010 used - \033\007%u\033\010 free\n",
                 max_blocks, BLOCK_SIZE / 1024, used_blocks, pmm_num_free_blocks());
 }
 
