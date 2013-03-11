@@ -2,6 +2,7 @@
 #define __KERNEL_VGA_H__
 
 #include <types.h>
+#include "driver.h"
 
 #define COLS    80
 #define ROWS    25
@@ -10,7 +11,9 @@
 #define error(str)  vga_print_str("[[0x0c]][ERROR][[0x04]] " str "\n")
 #define newline     vga_print_str("\n")
 
-void vga_init();
+device_t *vga_init();
+size_t vga_write(u8_t *data, size_t len);
+
 void vga_clear();
 void vga_scroll();
 void vga_print_char(const char c);

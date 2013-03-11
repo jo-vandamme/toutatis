@@ -1,8 +1,10 @@
 #include <arch.h>
 #include <multiboot.h>
 #include <vga.h>
-#include <kprintf.h>
+#include <logging.h>
 #include <phys_mem.h>
+#include <serial.h>
+#include <driver.h>
 
 void print_banner(const char *loader);
 void print_mmap(const multiboot_info_t *mbi);
@@ -10,6 +12,9 @@ void my_func(registers_t *r);
 void my_func2(registers_t *r);
 void my_func3(registers_t *r);
 void wait(u32_t ms);
+
+static device_t *vga_driver;
+static device_t *com_driver;
 
 char *memory_types[] =
 {
@@ -21,7 +26,9 @@ char *memory_types[] =
 
 void main(u32_t magic, multiboot_info_t *mbi, u32_t kernel_size)
 {
-        vga_init();
+        vga_driver = vga_init();
+        com_driver = serial_init();
+        logging_init(vga_driver, com_driver);
 
         if (mbi->flags & MULTIBOOT_LOADER) {
                 print_banner((char *)mbi->boot_loader_name);
@@ -34,42 +41,27 @@ void main(u32_t magic, multiboot_info_t *mbi, u32_t kernel_size)
                 kprintf("\033\014No memory information\n");
                 goto error;
         }
-        print_mmap(mbi);
+
         arch_init();
+
+        print_mmap(mbi);
         pmm_init(mbi, (mbi->mem_upper + mbi->mem_lower) * 1024, kernel_size);
-        (void)kernel_size;
 
-        wait(1000);
-        attach_interrupt_handler(IRQ(0), my_func);
-        sleep(500);
-        attach_interrupt_handler(IRQ(0), my_func2);
-        sleep(500);
-        detach_interrupt_handler(IRQ(0), my_func2);
-        sleep(300);
-        detach_interrupt_handler(IRQ(0), my_func);
-        newline;
-
-        attach_interrupt_handler(IRQ(1), my_func3);
-        enable_irq(1);
-
+        serial_terminate();
 error:
         for (;;) ;
 }
 
 void print_banner(const char *loader)
 {
-        vga_clear();
-        kprintf("\n  Toutatis kernel booting from %s\n"
-                "\033\016  ------------------------------------------------\033\007\n", loader);
+        kprintf("Toutatis kernel booting from %s\n", loader);
 }
 
 void print_mmap(const multiboot_info_t *mbi)
 {
         unsigned long size;
 
-        kprintf("\n\t\t\tBIOS memory map:\n"
-                "\033\007\t\t\t----------------\n"
-                "\033\010\tLower memory: \033\007%uKB\033\010 - Upper memory: \033\007%uMB\033\010\n\n",
+        kprintf("\033\010Lower memory: \033\007%uKB\033\010 - Upper memory: \033\007%uMB\033\010\n",
                 mbi->mem_lower, mbi->mem_upper / 1024);
 
         mmap_entry_t * mmap = (mmap_entry_t *)mbi->mmap_addr;
@@ -81,7 +73,7 @@ void print_mmap(const multiboot_info_t *mbi)
 
                 size = mmap->length_low / 1024;
 
-                kprintf("    \033\012%02u: \033\016%#010x%010x\033\010:\033\016%#010x%010x"
+                kprintf("\033\012%02u: \033\016%#010x%010x\033\010:\033\016%#010x%010x"
                         "\033\010 -> %4u%s \033\010(%u - \033\007%s\033\010)\n",
                         i++, mmap->addr_high, mmap->addr_low,
                         mmap->length_high, mmap->length_low,
@@ -91,35 +83,6 @@ void print_mmap(const multiboot_info_t *mbi)
 
                 mmap = (mmap_entry_t *)((u32_t)mmap + mmap->size + sizeof(mmap->size));
         }
-        vga_print_str("\033\007\n");
+        kprintf("\033\007\n");
 }
 
-void my_func(registers_t *r)
-{
-        (void)r;
-        kprintf("\033\012\r%u", get_ticks_count());
-}
-
-void my_func2(registers_t *r)
-{
-        (void)r;
-        kprintf("\t%x", get_ticks_count());
-}
-
-void my_func3(registers_t *r)
-{
-        (void)r;
-        kprintf("\033\013#");
-}
-
-void wait(u32_t ms)
-{
-        static char *wait = "|/-\\";
-        static u8_t i = 0;
-        u32_t current = get_ticks_count();
-
-        while (current + ms > get_ticks_count()) {
-                sleep(50);
-                kprintf("\r%c", *(wait + (i++) % 4));
-        }
-}

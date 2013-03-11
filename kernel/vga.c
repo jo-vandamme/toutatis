@@ -2,6 +2,7 @@
 #include <utils.h>
 #include "vga.h"
 #include "arch.h"
+#include "driver.h"
 
 #define CURS_CTRL       0x3d4
 #define CURS_DATA       0x3d5
@@ -11,10 +12,17 @@
 static u16_t xpos = 0, ypos = 0;
 static u16_t *video_mem = (u16_t *)0xb8000;
 static u16_t attribute = 0x0700;
+static device_t vga_device;
 
-void vga_init()
+device_t *vga_init()
 {
         get_cursor_pos(&xpos, &ypos);
+        vga_clear();
+
+        vga_device.read = 0;
+        vga_device.write = vga_write;
+
+        return &vga_device;
 }
 
 void vga_clear()
@@ -89,6 +97,22 @@ void vga_print_hex(const u32_t value)
         while (buffer[i]) {
                 vga_print_char(buffer[i++]);
         }
+}
+
+size_t vga_write(u8_t *data, size_t len)
+{
+        size_t i;
+
+        for (i = 0; *data && i < len; ++data, ++i) {
+                if (*data == '\033') {
+                        ++data;
+                        ++i;
+                        vga_set_attribute(*data << 8);
+                } else {
+                        vga_print_char((const char)*data);
+                }
+        }
+        return i;
 }
 
 void vga_print_str(const char *str)

@@ -48,7 +48,7 @@ iso: all
 	@mkisofs -input-charset utf8 -R -b boot/grub/stage2_eltorito -no-emul-boot -boot-load-size 4 -boot-info-table -o bin/toutatis.iso bin/iso
 
 qemu:
-	qemu-system-x86_64 -fda bin/toutatis.img -k en-us -monitor stdio
+	qemu-system-x86_64 -fda bin/toutatis.img -k en-us -monitor stdio -serial /dev/tty -vga std -m 128
 
 bochs:
 	cd bin && bochs -q -f bochsrc.txt
@@ -57,7 +57,8 @@ bochs_iso:
 	cd bin && bochs -q -f bochsrc_iso.txt
 
 qemu_iso:
-	qemu-system-x86_64 -cdrom bin/toutatis.iso -k en-us -monitor stdio
+	#qemu-system-x86_64 -cdrom bin/toutatis.iso -k en-us -monitor stdio -serial /dev/tty -vga std -m 128
+	qemu-system-x86_64 -kernel bin/kernel.elf -k en-us -monitor stdio -serial /dev/tty -vga std -m 128
 
 q: floppy qemu
 

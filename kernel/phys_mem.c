@@ -1,6 +1,6 @@
 #include <phys_mem.h>
 #include <string.h>
-#include <kprintf.h>
+#include <logging.h>
 
 static u32_t memory_size;
 static u32_t used_blocks;

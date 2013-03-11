@@ -10,6 +10,8 @@ KOBJS += kernel/bootstrap.o \
          kernel/vga.o \
          kernel/pic.o \
          kernel/pit.o \
-         kernel/kprintf.o \
+         kernel/vsprintf.o \
          kernel/string.o \
-         kernel/phys_mem.o
+         kernel/phys_mem.o \
+         kernel/serial.o \
+         kernel/logging.o

@@ -1,4 +1,4 @@
-#include <kprintf.h>
+#include <vsprintf.h>
 #include <types.h>
 #include <stdarg.h>
 #include <string.h>
@@ -271,18 +271,4 @@ int sprintf(char *buf, const char *fmt, ...)
         len = vsprintf(buf, fmt, args);
         va_end(args);
         return len;
-}
-
-int kprintf(const char *fmt, ...)
-{
-        char buf[1024];
-        va_list args;
-        int n = 0;
-
-        va_start(args, fmt);
-        n = vsprintf(buf, fmt, args);
-        va_end(args);
-
-        vga_print_str(buf);
-        return n;
 }

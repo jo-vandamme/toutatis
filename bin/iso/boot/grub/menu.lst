@@ -1,6 +1,6 @@
 default  0
 fallback 0
-timeout  20
+timeout  0
 
 color cyan/blue white/blue
 
