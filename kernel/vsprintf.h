@@ -5,6 +5,5 @@
 
 int vsprintf(char *s, const char *fmt, va_list arg);
 int sprintf(char *buf, const char *fmt, ...);
-int kprintf(const char *fmt, ...);
 
 #endif
