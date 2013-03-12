@@ -66,6 +66,8 @@ static int serial_received(void);
 static char read_char(void);
 #endif
 
+void kernel_voffset(void);
+
 device_t *serial_init(void)
 {
         const char *init_message = "\n\033[4;35;40mSerial output\033[0;37;40m\n";
@@ -73,7 +75,7 @@ device_t *serial_init(void)
         u16_t divisor = 3; /* 115200 / 3 = 38400 Hz */
 
         /* get the base address of COM1 port in the BDA */
-        com = *((u16_t *)0x0400);
+        com = *((u16_t *)(0x0400 + (unsigned)&kernel_voffset));
 
         outb(SERIAL_INT_ENABLE(com), 0x00);     /* disable interrupts */
         outb(SERIAL_LINE_CTRL(com), 0x80);      /* enable DLAB */

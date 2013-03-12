@@ -59,6 +59,7 @@ bochs_iso:
 qemu_iso:
 	#qemu-system-x86_64 -cdrom bin/toutatis.iso -k en-us -monitor stdio -serial /dev/tty -vga std -m 128
 	qemu-system-x86_64 -kernel bin/kernel.elf -k en-us -monitor stdio -serial /dev/tty -vga std -m 128
+	#qemu-system-x86_64 -kernel bin/kernel.elf -k en-us -monitor stdio -serial file:./bin/com1.out -vga std -m 128
 
 q: floppy qemu
 

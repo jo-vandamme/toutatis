@@ -9,6 +9,8 @@ static u32_t max_blocks;
 static u32_t *frames;
 static u32_t last_alloc_block = 0;
 
+void kernel_voffset(void);
+
 static void set_block(u32_t frame)
 {
         frames[frame / 32] |= (1 << (frame % 32));
@@ -85,15 +87,14 @@ void pmm_init(multiboot_info_t* mbi, size_t mem_size, size_t kernel_size)
         memsetw(frames, 0xffff, max_blocks / 16); /* 16 blocks per word */
 
         /* Free available regions */
-        mmap_entry_t * mmap = (mmap_entry_t *)mbi->mmap_addr;
-        while ((u32_t)mmap < mbi->mmap_addr + mbi->mmap_length)
+        mmap_entry_t * mmap = (mmap_entry_t *)(mbi->mmap_addr + (unsigned)&kernel_voffset);
+        while ((u32_t)mmap < mbi->mmap_addr + (unsigned)&kernel_voffset + mbi->mmap_length)
         {
                 if (mmap->type > 4)
                         mmap->type = 1;
 
                 if (mmap->type == 1) {
-                        clear_region((mmap->addr_high << 8) + mmap->addr_low,
-                                     (mmap->length_high << 8) + mmap->length_low);
+                        clear_region(mmap->addr_low + (unsigned)&kernel_voffset, mmap->length_low);
                 }
                 mmap = (mmap_entry_t *)((u32_t)mmap + 24);
         }

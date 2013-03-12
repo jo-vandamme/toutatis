@@ -1,11 +1,12 @@
 OUTPUT_FORMAT("elf32-i386")
 ENTRY("bootstrap")
 
-kernel_phys = 0x00100000;
+kernel_phys    = 0x00100000;
+kernel_voffset = 0xc0000000;
 
 SECTIONS
 {
-        . = kernel_phys;
+        . = kernel_phys + kernel_voffset;
 
         kernel_start = .;
 

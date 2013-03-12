@@ -11,6 +11,8 @@ void print_mmap(const multiboot_info_t *mbi);
 static device_t *vga_driver;
 static device_t *com_driver;
 
+void kernel_voffset(void);
+
 char *memory_types[] =
 {
         "Available",
@@ -26,7 +28,7 @@ void main(u32_t magic, multiboot_info_t *mbi, u32_t kernel_size)
         logging_init(vga_driver, com_driver);
 
         if (mbi->flags & MULTIBOOT_LOADER) {
-                kprintf(INFO, "Toutatis kernel booting from %s\n", (char *)mbi->boot_loader_name);
+                kprintf(INFO, "Toutatis kernel booting from %s\n", (char *)(mbi->boot_loader_name + (unsigned)&kernel_voffset));
         }
         if (magic != MULTIBOOT_MAGIC) {
                 kprintf(CRITICAL, "\033\014Bad magic number %#010x\n", magic);
@@ -41,6 +43,7 @@ void main(u32_t magic, multiboot_info_t *mbi, u32_t kernel_size)
 
         print_mmap(mbi);
         pmm_init(mbi, (mbi->mem_upper + mbi->mem_lower) * 1024, kernel_size);
+        (void)kernel_size;
 
         serial_terminate();
 error:
@@ -54,9 +57,9 @@ void print_mmap(const multiboot_info_t *mbi)
         kprintf(INFO, "\033\010Lower memory: \033\007%uKB\033\010 - Upper memory: \033\007%uMB\033\010\n",
                 mbi->mem_lower, mbi->mem_upper / 1024);
 
-        mmap_entry_t * mmap = (mmap_entry_t *)mbi->mmap_addr;
+        mmap_entry_t * mmap = (mmap_entry_t *)(mbi->mmap_addr + (unsigned)&kernel_voffset);
         u32_t i = 1;
-        while ((u32_t)mmap < mbi->mmap_addr + mbi->mmap_length)
+        while ((u32_t)mmap < mbi->mmap_addr + (unsigned)&kernel_voffset + mbi->mmap_length)
         {
                 if (mmap->type > 4)
                         mmap->type = 1;

@@ -10,7 +10,7 @@
 #define LOW_BYTE        15
 
 static u16_t xpos = 0, ypos = 0;
-static u16_t *video_mem = (u16_t *)0xb8000;
+static u16_t *video_mem = (u16_t *)0xc00b8000;
 static u16_t attribute = 0x0700;
 static device_t vga_device;
 
