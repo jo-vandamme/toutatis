@@ -21,10 +21,12 @@
 #define ICW4_SFNM       0x10        /* special fully nested (not) */
 
 static u32_t bad_irqs = 0;
-static u32_t mask = 0xfffb;
 
 void pic_init()
 {
+        /* save mask */
+        u32_t mask = inb(PIC1_DATA) | inb(PIC2_DATA) << 8;
+
         /* ICW1: start the initialization sequence (in cascade mode) */
         outb(PIC1_CTRL, ICW1_INIT | ICW1_ICW4);
         outb(PIC2_CTRL, ICW1_INIT | ICW1_ICW4);
@@ -43,10 +45,49 @@ void pic_init()
         outb(PIC1_DATA, ICW4_8086);
         outb(PIC2_DATA, ICW4_8086);
 
-        /* disable pic */
+        /* restore saved mask */
+        outb(PIC1_DATA, mask);
+        outb(PIC2_DATA, mask >> 8);
+}
+
+void pic_disable()
+{
+        /* deactivate all irqs, except irq 2 since this
+         * is the connection to the slave pic */
         outb(PIC1_DATA, 0xfb);
         outb(PIC2_DATA, 0xff);
-        mask = 0xfffb;
+}
+
+void pic_disable_irq(pic_index_t irq)
+{
+        u16_t port;
+        u8_t mask;
+
+        if (irq < 8) {
+                port = PIC1_DATA;
+        } else {
+                port = PIC2_DATA;
+                irq -= 8;
+        }
+
+        mask = inb(port) | (1 << irq);
+        outb(port, mask);
+}
+
+void pic_enable_irq(pic_index_t irq)
+{
+        u16_t port;
+        u8_t mask;
+
+        if (irq < 8) {
+                port = PIC1_DATA;
+        } else {
+                port = PIC2_DATA;
+                irq -= 8;
+        }
+
+        mask = inb(port) & ~(1 << irq);
+        outb(port, mask);
 }
 
 u32_t pic_get_bad_irqs()
@@ -101,47 +142,4 @@ u8_t pic_acknowledge(pic_index_t irq)
         }
         outb(PIC1_CTRL, PIC_EOI);
         return 0;
-}
-
-void pic_disable_irq(pic_index_t irq)
-{
-        u16_t port;
-
-        if (irq < 8) {
-                port = PIC1_DATA;
-        } else {
-                port = PIC2_DATA;
-        }
-
-        mask |= 1 << irq;
-        outb(port, mask >> ((irq < 8) ? 0 : 8));
-}
-
-void pic_enable_irq(pic_index_t irq)
-{
-        u16_t port;
-
-        if (irq < 8) {
-                port = PIC1_DATA;
-        } else {
-                port = PIC2_DATA;
-        }
-
-        mask &= ~(1 << irq);
-        outb(port, mask >> ((irq < 8) ? 0 : 8));
-}
-
-void pic_disable()
-{
-        /* deactivate all irqs, except irq 2 since this
-         * is the connection to the slave pic */
-        mask = inb(PIC1_DATA) | inb(PIC2_DATA) << 8;
-        outb(PIC1_DATA, 0xfb);
-        outb(PIC2_DATA, 0xff);
-}
-
-void pic_restore()
-{
-        outb(PIC1_DATA, mask);
-        outb(PIC2_DATA, mask >> 8);
 }

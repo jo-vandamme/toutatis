@@ -9,8 +9,9 @@ void idt_set_entry(idt_ptr_t *p, u8_t index, void (*callback)(), u16_t selector,
         u32_t base = (u32_t)callback;
 
         p->base[index].base_low  = base & 0xffff;
-        p->base[index].base_high = base >> 16;
+        p->base[index].base_high = (base >> 16) & 0xffff;
         p->base[index].selector  = selector;
+        p->base[index].zero      = 0;
         p->base[index].flags     = flags;
 }
 

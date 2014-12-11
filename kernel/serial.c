@@ -70,7 +70,7 @@ void kernel_voffset(void);
 
 device_t *serial_init(void)
 {
-        const char *init_message = "\n\033[4;35;40mSerial output\033[0;37;40m\n";
+        const char *init_message = "\n\033[4;35;40mSerial output from kernel\033[0;37;40m\n";
 
         u16_t divisor = 3; /* 115200 / 3 = 38400 Hz */
 

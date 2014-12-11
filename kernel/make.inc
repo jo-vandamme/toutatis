@@ -13,5 +13,7 @@ KOBJS += kernel/bootstrap.o \
          kernel/vsprintf.o \
          kernel/string.o \
          kernel/phys_mem.o \
+         kernel/virt_mem.o \
          kernel/serial.o \
-         kernel/logging.o
+         kernel/logging.o \
+         kernel/keyboard.o

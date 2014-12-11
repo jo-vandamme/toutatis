@@ -5,7 +5,7 @@
 
 #define IRQ(x)          ((x) + 0x20)
 #define SYSCALL_VECTOR  0x80
-#define TIMER_FREQ      1000
+#define TIMER_FREQ      100
 
 typedef struct
 {
@@ -46,7 +46,7 @@ void sti();
 void io_wait();
 
 void outb(u16_t port, u8_t data);
-void oubw(u16_t port, u16_t data);
+void outw(u16_t port, u16_t data);
 void outl(u16_t port, u32_t data);
 
 u8_t  inb(u16_t port);

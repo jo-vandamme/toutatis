@@ -11,6 +11,8 @@
 #define ACCESS_KDATA (GDT_ACCESS_PRESENT | GDT_ACCESS_RING0 | GDT_ACCESS_ALWAYS1 | GDT_ACCESS_RW)
 #define ACCESS_UDATA (GDT_ACCESS_PRESENT | GDT_ACCESS_RING3 | GDT_ACCESS_ALWAYS1 | GDT_ACCESS_RW)
 #define GDT_FLAGS    (GDT_FLAG_GRANULARITY | GDT_FLAG_32BIT)
+#define IDT_FLAGS_RING0    (IDT_FLAG_PRESENT | IDT_FLAG_RING0 | IDT_FLAG_TYPE32INT)
+#define IDT_FLAGS_RING3    (IDT_FLAG_PRESENT | IDT_FLAG_RING3 | IDT_FLAG_TYPE32INT)
 
 #define MAX_HANDLERS 50
 
@@ -59,71 +61,67 @@ extern void irq13();
 extern void irq14();
 extern void irq15();
 
-static void setup_tables(gdt_ptr_t *gdtp, idt_ptr_t *idtp)
-{
-        u16_t kcode = gdt_set_entry(gdtp, GDT_INDEX_KCODE, 0x00000000, 0xffffffff, ACCESS_KCODE, GDT_FLAGS);
-        u16_t ucode = gdt_set_entry(gdtp, GDT_INDEX_UCODE, 0x00000000, 0xffffffff, ACCESS_UCODE, GDT_FLAGS);
-        u16_t kdata = gdt_set_entry(gdtp, GDT_INDEX_KDATA, 0x00000000, 0xffffffff, ACCESS_KDATA, GDT_FLAGS);
-        u16_t udata = gdt_set_entry(gdtp, GDT_INDEX_UDATA, 0x00000000, 0xffffffff, ACCESS_UDATA, GDT_FLAGS);
-
-        idt_set_entry(idtp, 0,  isr0,  kcode, IDT_FLAG_PRESENT | IDT_FLAG_RING0 | IDT_FLAG_TYPE32INT);
-        idt_set_entry(idtp, 1,  isr1,  kcode, IDT_FLAG_PRESENT | IDT_FLAG_RING0 | IDT_FLAG_TYPE32INT);
-        idt_set_entry(idtp, 2,  isr2,  kcode, IDT_FLAG_PRESENT | IDT_FLAG_RING0 | IDT_FLAG_TYPE32INT);
-        idt_set_entry(idtp, 3,  isr3,  kcode, IDT_FLAG_PRESENT | IDT_FLAG_RING0 | IDT_FLAG_TYPE32INT);
-        idt_set_entry(idtp, 4,  isr4,  kcode, IDT_FLAG_PRESENT | IDT_FLAG_RING0 | IDT_FLAG_TYPE32INT);
-        idt_set_entry(idtp, 5,  isr5,  kcode, IDT_FLAG_PRESENT | IDT_FLAG_RING0 | IDT_FLAG_TYPE32INT);
-        idt_set_entry(idtp, 6,  isr6,  kcode, IDT_FLAG_PRESENT | IDT_FLAG_RING0 | IDT_FLAG_TYPE32INT);
-        idt_set_entry(idtp, 7,  isr7,  kcode, IDT_FLAG_PRESENT | IDT_FLAG_RING0 | IDT_FLAG_TYPE32INT);
-        idt_set_entry(idtp, 8,  isr8,  kcode, IDT_FLAG_PRESENT | IDT_FLAG_RING0 | IDT_FLAG_TYPE32INT);
-        idt_set_entry(idtp, 9,  isr9,  kcode, IDT_FLAG_PRESENT | IDT_FLAG_RING0 | IDT_FLAG_TYPE32INT);
-        idt_set_entry(idtp, 10, isr10, kcode, IDT_FLAG_PRESENT | IDT_FLAG_RING0 | IDT_FLAG_TYPE32INT);
-        idt_set_entry(idtp, 11, isr11, kcode, IDT_FLAG_PRESENT | IDT_FLAG_RING0 | IDT_FLAG_TYPE32INT);
-        idt_set_entry(idtp, 12, isr12, kcode, IDT_FLAG_PRESENT | IDT_FLAG_RING0 | IDT_FLAG_TYPE32INT);
-        idt_set_entry(idtp, 13, isr13, kcode, IDT_FLAG_PRESENT | IDT_FLAG_RING0 | IDT_FLAG_TYPE32INT);
-        idt_set_entry(idtp, 14, isr14, kcode, IDT_FLAG_PRESENT | IDT_FLAG_RING0 | IDT_FLAG_TYPE32INT);
-        idt_set_entry(idtp, 16, isr16, kcode, IDT_FLAG_PRESENT | IDT_FLAG_RING0 | IDT_FLAG_TYPE32INT);
-        idt_set_entry(idtp, 17, isr17, kcode, IDT_FLAG_PRESENT | IDT_FLAG_RING0 | IDT_FLAG_TYPE32INT);
-        idt_set_entry(idtp, 18, isr18, kcode, IDT_FLAG_PRESENT | IDT_FLAG_RING0 | IDT_FLAG_TYPE32INT);
-        idt_set_entry(idtp, 19, isr19, kcode, IDT_FLAG_PRESENT | IDT_FLAG_RING0 | IDT_FLAG_TYPE32INT);
-
-        idt_set_entry(idtp, IRQ(0),  irq0,  kcode, IDT_FLAG_PRESENT | IDT_FLAG_RING0 | IDT_FLAG_TYPE32INT);
-        idt_set_entry(idtp, IRQ(1),  irq1,  kcode, IDT_FLAG_PRESENT | IDT_FLAG_RING0 | IDT_FLAG_TYPE32INT);
-        idt_set_entry(idtp, IRQ(2),  irq2,  kcode, IDT_FLAG_PRESENT | IDT_FLAG_RING0 | IDT_FLAG_TYPE32INT);
-        idt_set_entry(idtp, IRQ(3),  irq3,  kcode, IDT_FLAG_PRESENT | IDT_FLAG_RING0 | IDT_FLAG_TYPE32INT);
-        idt_set_entry(idtp, IRQ(4),  irq4,  kcode, IDT_FLAG_PRESENT | IDT_FLAG_RING0 | IDT_FLAG_TYPE32INT);
-        idt_set_entry(idtp, IRQ(5),  irq5,  kcode, IDT_FLAG_PRESENT | IDT_FLAG_RING0 | IDT_FLAG_TYPE32INT);
-        idt_set_entry(idtp, IRQ(6),  irq6,  kcode, IDT_FLAG_PRESENT | IDT_FLAG_RING0 | IDT_FLAG_TYPE32INT);
-        idt_set_entry(idtp, IRQ(7),  irq7,  kcode, IDT_FLAG_PRESENT | IDT_FLAG_RING0 | IDT_FLAG_TYPE32INT);
-        idt_set_entry(idtp, IRQ(8),  irq8,  kcode, IDT_FLAG_PRESENT | IDT_FLAG_RING0 | IDT_FLAG_TYPE32INT);
-        idt_set_entry(idtp, IRQ(9),  irq9,  kcode, IDT_FLAG_PRESENT | IDT_FLAG_RING0 | IDT_FLAG_TYPE32INT);
-        idt_set_entry(idtp, IRQ(10), irq10, kcode, IDT_FLAG_PRESENT | IDT_FLAG_RING0 | IDT_FLAG_TYPE32INT);
-        idt_set_entry(idtp, IRQ(11), irq11, kcode, IDT_FLAG_PRESENT | IDT_FLAG_RING0 | IDT_FLAG_TYPE32INT);
-        idt_set_entry(idtp, IRQ(12), irq12, kcode, IDT_FLAG_PRESENT | IDT_FLAG_RING0 | IDT_FLAG_TYPE32INT);
-        idt_set_entry(idtp, IRQ(13), irq13, kcode, IDT_FLAG_PRESENT | IDT_FLAG_RING0 | IDT_FLAG_TYPE32INT);
-        idt_set_entry(idtp, IRQ(14), irq14, kcode, IDT_FLAG_PRESENT | IDT_FLAG_RING0 | IDT_FLAG_TYPE32INT);
-        idt_set_entry(idtp, IRQ(15), irq15, kcode, IDT_FLAG_PRESENT | IDT_FLAG_RING0 | IDT_FLAG_TYPE32INT);
-
-        idt_set_entry(idtp, SYSCALL_VECTOR, isr128, kcode, IDT_FLAG_PRESENT | IDT_FLAG_RING3 | IDT_FLAG_TYPE32INT);
-
-        cpu_set_gdt(gdtp);
-        cpu_set_idt(idtp);
-
-        (void)ucode;
-        (void)kdata;
-        (void)udata;
-}
-
 void arch_init()
 {
         gdt_ptr_t *gdtp = gdt_setup_pointer();
         idt_ptr_t *idtp = idt_setup_pointer();
 
-        setup_tables(gdtp, idtp);
+        u16_t kcode = gdt_set_entry(gdtp, GDT_INDEX_KCODE, 0x00000000, 0xffffffff, ACCESS_KCODE, GDT_FLAGS);
+        u16_t ucode = gdt_set_entry(gdtp, GDT_INDEX_UCODE, 0x00000000, 0xffffffff, ACCESS_UCODE, GDT_FLAGS);
+        u16_t kdata = gdt_set_entry(gdtp, GDT_INDEX_KDATA, 0x00000000, 0xffffffff, ACCESS_KDATA, GDT_FLAGS);
+        u16_t udata = gdt_set_entry(gdtp, GDT_INDEX_UDATA, 0x00000000, 0xffffffff, ACCESS_UDATA, GDT_FLAGS);
+
+        cpu_set_gdt(gdtp);
+        
+        idt_set_entry(idtp, 0,  isr0,  kcode, IDT_FLAGS_RING0);
+        idt_set_entry(idtp, 1,  isr1,  kcode, IDT_FLAGS_RING0);
+        idt_set_entry(idtp, 2,  isr2,  kcode, IDT_FLAGS_RING0);
+        idt_set_entry(idtp, 3,  isr3,  kcode, IDT_FLAGS_RING0);
+        idt_set_entry(idtp, 4,  isr4,  kcode, IDT_FLAGS_RING0);
+        idt_set_entry(idtp, 5,  isr5,  kcode, IDT_FLAGS_RING0);
+        idt_set_entry(idtp, 6,  isr6,  kcode, IDT_FLAGS_RING0);
+        idt_set_entry(idtp, 7,  isr7,  kcode, IDT_FLAGS_RING0);
+        idt_set_entry(idtp, 8,  isr8,  kcode, IDT_FLAGS_RING0);
+        idt_set_entry(idtp, 9,  isr9,  kcode, IDT_FLAGS_RING0);
+        idt_set_entry(idtp, 10, isr10, kcode, IDT_FLAGS_RING0);
+        idt_set_entry(idtp, 11, isr11, kcode, IDT_FLAGS_RING0);
+        idt_set_entry(idtp, 12, isr12, kcode, IDT_FLAGS_RING0);
+        idt_set_entry(idtp, 13, isr13, kcode, IDT_FLAGS_RING0);
+        idt_set_entry(idtp, 14, isr14, kcode, IDT_FLAGS_RING0);
+        idt_set_entry(idtp, 16, isr16, kcode, IDT_FLAGS_RING0);
+        idt_set_entry(idtp, 17, isr17, kcode, IDT_FLAGS_RING0);
+        idt_set_entry(idtp, 18, isr18, kcode, IDT_FLAGS_RING0);
+        idt_set_entry(idtp, 19, isr19, kcode, IDT_FLAGS_RING0);
 
         pic_init();
         pic_disable();
+        
+        idt_set_entry(idtp, IRQ(0),  irq0,  kcode, IDT_FLAGS_RING0);
+        idt_set_entry(idtp, IRQ(1),  irq1,  kcode, IDT_FLAGS_RING0);
+        idt_set_entry(idtp, IRQ(2),  irq2,  kcode, IDT_FLAGS_RING0);
+        idt_set_entry(idtp, IRQ(3),  irq3,  kcode, IDT_FLAGS_RING0);
+        idt_set_entry(idtp, IRQ(4),  irq4,  kcode, IDT_FLAGS_RING0);
+        idt_set_entry(idtp, IRQ(5),  irq5,  kcode, IDT_FLAGS_RING0);
+        idt_set_entry(idtp, IRQ(6),  irq6,  kcode, IDT_FLAGS_RING0);
+        idt_set_entry(idtp, IRQ(7),  irq7,  kcode, IDT_FLAGS_RING0);
+        idt_set_entry(idtp, IRQ(8),  irq8,  kcode, IDT_FLAGS_RING0);
+        idt_set_entry(idtp, IRQ(9),  irq9,  kcode, IDT_FLAGS_RING0);
+        idt_set_entry(idtp, IRQ(10), irq10, kcode, IDT_FLAGS_RING0);
+        idt_set_entry(idtp, IRQ(11), irq11, kcode, IDT_FLAGS_RING0);
+        idt_set_entry(idtp, IRQ(12), irq12, kcode, IDT_FLAGS_RING0);
+        idt_set_entry(idtp, IRQ(13), irq13, kcode, IDT_FLAGS_RING0);
+        idt_set_entry(idtp, IRQ(14), irq14, kcode, IDT_FLAGS_RING0);
+        idt_set_entry(idtp, IRQ(15), irq15, kcode, IDT_FLAGS_RING0);
+
+        idt_set_entry(idtp, SYSCALL_VECTOR, isr128, kcode, IDT_FLAGS_RING3);
+
+        cpu_set_idt(idtp);
 
         pit_init(TIMER_FREQ);
+
+        (void)ucode;
+        (void)kdata;
+        (void)udata;
 }
 
 void arch_finish()
@@ -249,7 +247,7 @@ void disable_irqs()
 
 void restore_irqs()
 {
-        pic_restore();
+        //pic_restore();
 }
 
 void sleep(u32_t ms)

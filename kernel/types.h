@@ -10,7 +10,6 @@ typedef signed short            s16_t;
 typedef unsigned int            u32_t;
 typedef signed int              s32_t;
 typedef unsigned int            uintptr_t;
-typedef unsigned int            addr_t;
 typedef unsigned int            size_t;
 
 #endif

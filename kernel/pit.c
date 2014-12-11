@@ -2,6 +2,7 @@
 #include "pic.h"
 #include "arch.h"
 #include <vga.h>
+#include <logging.h>
 
 #define IRQ_TIMER                       0
 
@@ -27,6 +28,9 @@ static void pit_handler(registers_t *r)
 {
         (void)r;
         ++ticks;
+
+        if (ticks % 100 == 0)
+            kprintf(DEBUG, ".");
 }
 
 void pit_init(u32_t freq)
@@ -34,7 +38,7 @@ void pit_init(u32_t freq)
         if (freq == 0)
                 return;
 
-        u16_t divisor = (u16_t)(PIT_MAX_FREQ / freq);
+        u32_t divisor = (u16_t)(PIT_MAX_FREQ / freq);
 
         outb(PIT_CTRL, PIT_OCW_COUNTER0 |
                        PIT_OCW_BINCOUNT_BINARY |
@@ -42,7 +46,7 @@ void pit_init(u32_t freq)
                        PIT_OCW_MODE_SQUARE_WAVE);
 
         outb(PIT_DATA0, divisor & 0xff); /* send lower byte */
-        outb(PIT_DATA0, divisor >> 8);   /* send upper byte */
+        outb(PIT_DATA0, (divisor >> 8) & 0xff);   /* send upper byte */
 
         ticks = 0;
 

@@ -4,15 +4,19 @@
 #include <types.h>
 #include <multiboot.h>
 
-#define BLOCK_SIZE 0x1000
+#define FRAME_SIZE 0x1000
 
-void pmm_init(multiboot_info_t* mbi, size_t mem_size, size_t kernel_size);
+typedef u32_t phys_addr_t;
 
-addr_t pmm_alloc_block();
-void pmm_free_block(addr_t addr);
+int pmm_init(multiboot_info_t* mbi);
 
-u32_t pmm_num_free_blocks();
-u32_t pmm_num_used_blocks();
+phys_addr_t pmm_alloc_frame();
+phys_addr_t pmm_alloc_frames(size_t num);
+void pmm_free_frame(phys_addr_t addr);
+void pmm_free_frames(phys_addr_t addr, size_t num);
+
+u32_t pmm_num_free_frames();
+u32_t pmm_num_used_frames();
 u32_t pmm_memory_size();
 
 #endif

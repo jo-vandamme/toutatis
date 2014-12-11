@@ -2,12 +2,14 @@
 #define __KERNEL_VIRT_MEM_H__
 
 #include <types.h>
+#include <phys_mem.h>
+#include <arch.h>
 
 #define PAGE_DIRECTORY_INDEX(virt) (((virt) >> 22) & 0x3ff)
 #define PAGE_TABLE_INDEX(virt)     (((virt) >> 12) & 0x3ff)
 #define PAGE_FRAME_ADDRESS(virt)   ((virt) & 0xfff);
 
-typedef u32_t virtual_addr_t;
+typedef u32_t virt_addr_t;
 
 /* page table entry */
 typedef struct
@@ -54,6 +56,15 @@ typedef struct
 } page_dir_t;
 
 void vmm_init();
-int vmm_switch_directory(page_dir_t *dir);
+
+int vmm_set_page_directory(page_dir_t *dir);
+page_dir_t *vmm_get_page_directory();
+
+int vmm_alloc_page(pte_t *page, int is_kernel, int is_writeable);
+void vmm_free_page(pte_t *page);
+
+void vmm_map_page(phys_addr_t phys, virt_addr_t virt);
+
+void page_fault(registers_t *regs);
 
 #endif

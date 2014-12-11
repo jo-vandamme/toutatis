@@ -11,7 +11,7 @@
 
 static u16_t xpos = 0, ypos = 0;
 static u16_t *video_mem = (u16_t *)0xc00b8000;
-static u16_t attribute = 0x0700;
+static u16_t attribute = 0x8f00;
 static device_t vga_device;
 
 device_t *vga_init()
@@ -107,7 +107,7 @@ size_t vga_write(u8_t *data, size_t len)
                 if (*data == '\033') {
                         ++data;
                         ++i;
-                        vga_set_attribute(*data << 8);
+                        vga_set_attribute(*data << 8 | (attribute & 0xf000));
                 } else {
                         vga_print_char((const char)*data);
                 }
@@ -120,7 +120,7 @@ void vga_print_str(const char *str)
         while (*str) {
                 /* detect color attributes like \033\007 */
                 if (*str == '\033') {
-                        vga_set_attribute(*++str << 8);
+                        vga_set_attribute(*++str << 8 | (attribute & 0xf000));
                         ++str;
                 } else {
                         vga_print_char(*str++);

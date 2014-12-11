@@ -25,9 +25,6 @@ clean:
 	@rm -f $(KOBJS)
 
 iso: all
-	#@cp /boot/grub/stage2_eltorito bin/iso/boot/grub
-	#@cp bin/stage2_eltorito bin/iso/boot/grub
-	#@cp bin/menu.lst bin/iso/boot/grub
 	@cp bin/kernel.elf bin/iso/boot
 	@gzip -c -9 bin/kernel.elf > bin/kernel.elf.zip
 	@cp bin/kernel.elf.zip bin/iso/boot
@@ -42,8 +39,4 @@ qemu_iso:
 isoq: iso qemu_iso
 
 isob: iso bochs_iso
-
-#@qemu-system-x86_64 -kernel bin/kernel.elf -k en-us -monitor stdio -serial /dev/tty -vga std -m 128
-#qemu-system-x86_64 -cdrom bin/toutatis.iso -k en-us -monitor stdio -serial /dev/tty -vga std -m 128
-#qemu-system-x86_64 -kernel bin/kernel.elf -k en-us -monitor stdio -serial file:./bin/com1.out -vga std -m 128
 

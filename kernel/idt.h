@@ -18,11 +18,11 @@
 
 typedef struct
 {
-        u16_t base_low;
-        u16_t selector;
-        u8_t  zero;
-        u8_t  flags; /* 0-3: gate type, 4: storage segment (0 for interrupts), 5-6: ring, 7: present */
-        u16_t base_high;
+        u16_t base_low;  /* lower part of the interrupt function's offset address */
+        u16_t selector;  /* selector of the interrupt function */
+        u8_t  zero;      /* unused */
+        u8_t  flags;     /* 0-3: gate type, 4: storage segment (0 for interrupts), 5-6: ring, 7: present */
+        u16_t base_high; /* upper part of the interrupt function's offset address */
 } __attribute__((packed)) idt_entry_t;
 
 typedef struct

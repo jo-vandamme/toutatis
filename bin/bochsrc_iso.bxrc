@@ -23,7 +23,8 @@ boot: cdrom
 # Logging
 #----------------------------------------------------------------------------------------------------
 
-com1:  enabled=1, mode=file, dev=com1.out
+com1:   enabled=1, mode=file, dev=com1.out
+#com1:   enabled=1, mode=term, dev=/dev/tty
 log:    bochsout.txt
 error:  action=report
 info:   action=report

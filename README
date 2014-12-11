@@ -5,9 +5,14 @@
 A small 32-bit operating system written
 for learning purposes.
 
+Features:
+- Higher half kernel
+- Physical memory management with a bitmap
+- Virtual memory management through paging
+
 To create an iso image using GRUB use:
 - make iso
 
-To build and run the kernel as an iso image using GRUB:
+To build and run the kernel (q stands for qemu and b for bochs)
 - make isoq
 - make isob

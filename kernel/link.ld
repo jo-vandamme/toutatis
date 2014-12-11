@@ -6,12 +6,12 @@ kernel_voffset = 0xc0000000;
 
 SECTIONS
 {
-        . = kernel_phys + kernel_voffset;
+        . = kernel_phys + kernel_voffset; /* The code should be relocated to 3GB + 1MB */
 
         kernel_start = .;
 
         /* Actual code */
-        .text : AT(kernel_phys) {
+        .text : AT(kernel_phys) { /* Where the kernel should be loaded into memory */
                 kernel_code = .;
                 *(.text)
                 *(.rodata*)
