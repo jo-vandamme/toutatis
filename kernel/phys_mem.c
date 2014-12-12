@@ -15,12 +15,12 @@ extern u32_t kernel_phys;
 #define FRAME_TO_IDX(frame) ((frame) / 32)
 #define FRAME_TO_OFF(frame) ((frame) % 32)
 
-static u32_t test_frame(u32_t frame)
+u32_t test_frame(u32_t frame)
 {
     return (frames[FRAME_TO_IDX(frame)] & (1 << FRAME_TO_OFF(frame)));
 }
 
-static void set_frame(u32_t frame)
+void set_frame(u32_t frame)
 {
     if (frame >= max_frames)
         return;
@@ -32,7 +32,7 @@ static void set_frame(u32_t frame)
     }
 }
 
-static void clear_frame(u32_t frame)
+void clear_frame(u32_t frame)
 {
     if (frame >= max_frames)
         return;

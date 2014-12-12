@@ -10,6 +10,10 @@ typedef u32_t phys_addr_t;
 
 int pmm_init(multiboot_info_t* mbi);
 
+u32_t test_frame(u32_t frame);
+void set_frame(u32_t frame);
+void clear_frame(u32_t frame);
+
 phys_addr_t pmm_alloc_frame();
 phys_addr_t pmm_alloc_frames(size_t num);
 void pmm_free_frame(phys_addr_t addr);

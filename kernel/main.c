@@ -58,8 +58,10 @@ void main(u32_t magic, multiboot_info_t *mbi)
 
     //interrupt(19);
     
-    u8_t *ptr = (u8_t *)(0xc03fffff + 1);
+    u8_t *ptr = (u8_t *)(0xc03fffff + 0);
+    u8_t c = *ptr;
     *ptr = 1;
+    (void)c;
 
     serial_terminate();
 error:

@@ -46,24 +46,23 @@ typedef struct
 /* page table */
 typedef struct
 {
-    pte_t entries[1024];
+    pte_t pages[1024];
 } page_table_t;
 
 /* page directory */
 typedef struct
 {
-    pde_t entries[1024];
+    pde_t tables[1024];
 } page_dir_t;
 
 void vmm_init();
 
-int vmm_set_page_directory(page_dir_t *dir);
-page_dir_t *vmm_get_page_directory();
+int vmm_switch_page_directory(page_dir_t *dir);
+
+pte_t *vmm_get_page(virt_addr_t virt, int make, page_dir_t *dir);
 
 int vmm_alloc_page(pte_t *page, int is_kernel, int is_writeable);
 void vmm_free_page(pte_t *page);
-
-void vmm_map_page(phys_addr_t phys, virt_addr_t virt);
 
 void page_fault(registers_t *regs);
 
