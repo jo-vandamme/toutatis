@@ -10,7 +10,7 @@ void *memcpy(void *dst, const void *src, size_t n)
      * of byte-at-a-time. Otherwise, copy by bytes.
      */
     void *d = dst;
-    if (((u32_t)dst | (u32_t)src | n) & 3) {
+    if (((uint32_t)dst | (uint32_t)src | n) & 3) {
         __asm__ volatile("cld; rep movsb (%%esi), %%es:(%%edi)"
                          : "+c" (n), "+S" (src), "+D" (d)
                          : : "cc", "memory");

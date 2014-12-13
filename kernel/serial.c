@@ -15,7 +15,7 @@
 #define SERIAL_MODEM_STATUS(base)       (base + 6) /* modem status register */
 #define SERIAL_SCRATCH(base)            (base + 7) /* scratch register */
 
-static u16_t com;
+static uint16_t com;
 static device_t com_device;
 
 static int is_transmit_empty(void);
@@ -72,10 +72,10 @@ device_t *serial_init(void)
 {
         const char *init_message = "\n\033[4;35;40mSerial output from kernel\033[0;37;40m\n";
 
-        u16_t divisor = 3; /* 115200 / 3 = 38400 Hz */
+        uint16_t divisor = 3; /* 115200 / 3 = 38400 Hz */
 
         /* get the base address of COM1 port in the BDA */
-        com = *((u16_t *)(0x0400 + (unsigned)&kernel_voffset));
+        com = *((uint16_t *)(0x0400 + (unsigned)&kernel_voffset));
 
         outb(SERIAL_INT_ENABLE(com), 0x00);     /* disable interrupts */
         outb(SERIAL_LINE_CTRL(com), 0x80);      /* enable DLAB */
@@ -127,7 +127,7 @@ void serial_terminate(void)
         }
 }
 
-size_t write(u8_t *data, size_t len)
+size_t write(uint8_t *data, size_t len)
 {
         size_t i;
         const char *fmt;

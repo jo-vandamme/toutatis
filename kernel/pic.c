@@ -20,12 +20,12 @@
 #define ICW4_BUF_MASTER 0x0c        /* buffered mode/master */
 #define ICW4_SFNM       0x10        /* special fully nested (not) */
 
-static u32_t bad_irqs = 0;
+static uint32_t bad_irqs = 0;
 
 void pic_init()
 {
         /* save mask */
-        u32_t mask = inb(PIC1_DATA) | inb(PIC2_DATA) << 8;
+        uint32_t mask = inb(PIC1_DATA) | inb(PIC2_DATA) << 8;
 
         /* ICW1: start the initialization sequence (in cascade mode) */
         outb(PIC1_CTRL, ICW1_INIT | ICW1_ICW4);
@@ -60,8 +60,8 @@ void pic_disable()
 
 void pic_disable_irq(pic_index_t irq)
 {
-        u16_t port;
-        u8_t mask;
+        uint16_t port;
+        uint8_t mask;
 
         if (irq < 8) {
                 port = PIC1_DATA;
@@ -76,8 +76,8 @@ void pic_disable_irq(pic_index_t irq)
 
 void pic_enable_irq(pic_index_t irq)
 {
-        u16_t port;
-        u8_t mask;
+        uint16_t port;
+        uint8_t mask;
 
         if (irq < 8) {
                 port = PIC1_DATA;
@@ -90,35 +90,35 @@ void pic_enable_irq(pic_index_t irq)
         outb(port, mask);
 }
 
-u32_t pic_get_bad_irqs()
+uint32_t pic_get_bad_irqs()
 {
         return bad_irqs;
 }
 
-static u16_t pic_get_irq_reg(u16_t command)
+static uint16_t pic_get_irq_reg(uint16_t command)
 {
         outb(PIC1_CTRL, command);
         outb(PIC2_CTRL, command);
         return (inb(PIC2_CTRL) << 8) | inb(PIC1_CTRL);
 }
 
-static u16_t pic_get_isr()
+static uint16_t pic_get_isr()
 {
         /* Tells us which interrupt are being serviced */
         return pic_get_irq_reg(PIC_READ_ISR);
 }
 
-static u8_t pic_is_spurious_7()
+static uint8_t pic_is_spurious_7()
 {
         return (pic_get_isr() & 0x0080) == 0;
 }
 
-static u8_t pic_is_spurious_15()
+static uint8_t pic_is_spurious_15()
 {
         return (pic_get_isr() & 0x8000) == 0;
 }
 
-u8_t pic_acknowledge(pic_index_t irq)
+uint8_t pic_acknowledge(pic_index_t irq)
 {
         /* handle spurious IRQs */
         if (irq == 7  && pic_is_spurious_7()) {

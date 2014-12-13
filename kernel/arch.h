@@ -9,48 +9,48 @@
 
 typedef struct
 {
-        u32_t gs, fs, es, ds;
-        u32_t edi, esi, ebp, esp, ebx, edx, ecx, eax;
-        u32_t int_no, err_code;
-        u32_t eip, cs, eflags, useresp, ss;
+        uint32_t gs, fs, es, ds;
+        uint32_t edi, esi, ebp, esp, ebx, edx, ecx, eax;
+        uint32_t int_no, err_code;
+        uint32_t eip, cs, eflags, useresp, ss;
 } registers_t;
 
 typedef void (*isr_t)(registers_t *);
 typedef struct handler_s
 {
         isr_t handler;
-        u8_t num;
-        u32_t index;
+        uint8_t num;
+        uint32_t index;
         struct handler_s *next, *prev;
 } handler_t;
 
 void arch_init();
 void arch_finish();
 
-void enable_irq(u8_t irq);
-void disable_irq(u8_t irq);
+void enable_irq(uint8_t irq);
+void disable_irq(uint8_t irq);
 void disable_irqs();
 void restore_irqs();
 
-void attach_interrupt_handler(u8_t num, isr_t handler);
-void detach_interrupt_handler(u8_t num, isr_t handler);
-handler_t *get_interrupt_handler(u8_t num);
+void attach_interrupt_handler(uint8_t num, isr_t handler);
+void detach_interrupt_handler(uint8_t num, isr_t handler);
+handler_t *get_interrupt_handler(uint8_t num);
 void interrupt(int no);
 
-u32_t get_ticks_count();
+uint32_t get_ticks_count();
 
-void sleep(u32_t ms);
+void sleep(uint32_t ms);
 void halt();
 void cli();
 void sti();
 void io_wait();
 
-void outb(u16_t port, u8_t data);
-void outw(u16_t port, u16_t data);
-void outl(u16_t port, u32_t data);
+void outb(uint16_t port, uint8_t data);
+void outw(uint16_t port, uint16_t data);
+void outl(uint16_t port, uint32_t data);
 
-u8_t  inb(u16_t port);
-u16_t inw(u16_t port);
-u32_t inl(u16_t port);
+uint8_t  inb(uint16_t port);
+uint16_t inw(uint16_t port);
+uint32_t inl(uint16_t port);
 
 #endif

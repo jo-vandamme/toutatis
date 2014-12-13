@@ -3,8 +3,8 @@
 
 #include <types.h>
 
-void pit_init(u32_t freq);
-u32_t pit_get_ticks();
-void pit_set_ticks(u32_t val);
+void pit_init(uint32_t freq);
+uint32_t pit_get_ticks();
+void pit_set_ticks(uint32_t val);
 
 #endif

@@ -1,7 +1,9 @@
 CC = gcc
 AS = nasm
-CFLAGS = -O3 -g -m32 -std=c99 -Wall -Wextra -Werror \
-	 -ffreestanding -fno-builtin -nostdlib -nostdinc \
+#-nostdinc
+CFLAGS = -O3 -g -m32 -std=c99 -pedantic -Wall -Wextra -Werror \
+     -Wno-unused-function -Wno-unused-parameter \
+	 -ffreestanding -fno-builtin -nostdlib -fno-omit-frame-pointer \
 	 -nodefaultlibs -fno-leading-underscore -nostartfiles \
 	 -Ikernel/
 ASFLAGS = -O3 -g -felf
@@ -34,7 +36,7 @@ bochs_iso:
 	@cd bin && bochs -q -f bochsrc_iso.bxrc
 
 qemu_iso:
-	@qemu-system-x86_64 -cdrom bin/toutatis.iso -k en-us -monitor stdio -serial /dev/tty -vga std -m 128
+	@qemu-system-i386 -cdrom bin/toutatis.iso -k en-us -monitor stdio -serial /dev/tty -vga std -m 1024
 
 isoq: iso qemu_iso
 

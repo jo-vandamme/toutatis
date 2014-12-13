@@ -23,10 +23,10 @@ int kprintf(log_level_t level, const char *fmt, ...)
         n = vsprintf(buf, fmt, args);
         va_end(args);
 
-        com_driver->write((u8_t *)buf, strlen(buf));
+        com_driver->write((uint8_t *)buf, strlen(buf));
 
         if (level >= INFO) {
-                vga_driver->write((u8_t *)buf, strlen(buf));
+                vga_driver->write((uint8_t *)buf, strlen(buf));
         }
 
         return n;

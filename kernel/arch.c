@@ -17,7 +17,7 @@
 #define MAX_HANDLERS 50
 
 static handler_t handlers[IDT_NUM_ENTRIES][MAX_HANDLERS];
-static u32_t handlers_heads[IDT_NUM_ENTRIES] = { 0 };
+static uint32_t handlers_heads[IDT_NUM_ENTRIES] = { 0 };
 
 static void dump_registers(registers_t *regs);
 extern char *exception_messages[];
@@ -66,10 +66,10 @@ void arch_init()
         gdt_ptr_t *gdtp = gdt_setup_pointer();
         idt_ptr_t *idtp = idt_setup_pointer();
 
-        u16_t kcode = gdt_set_entry(gdtp, GDT_INDEX_KCODE, 0x00000000, 0xffffffff, ACCESS_KCODE, GDT_FLAGS);
-        u16_t ucode = gdt_set_entry(gdtp, GDT_INDEX_UCODE, 0x00000000, 0xffffffff, ACCESS_UCODE, GDT_FLAGS);
-        u16_t kdata = gdt_set_entry(gdtp, GDT_INDEX_KDATA, 0x00000000, 0xffffffff, ACCESS_KDATA, GDT_FLAGS);
-        u16_t udata = gdt_set_entry(gdtp, GDT_INDEX_UDATA, 0x00000000, 0xffffffff, ACCESS_UDATA, GDT_FLAGS);
+        uint16_t kcode = gdt_set_entry(gdtp, GDT_INDEX_KCODE, 0x00000000, 0xffffffff, ACCESS_KCODE, GDT_FLAGS);
+        uint16_t ucode = gdt_set_entry(gdtp, GDT_INDEX_UCODE, 0x00000000, 0xffffffff, ACCESS_UCODE, GDT_FLAGS);
+        uint16_t kdata = gdt_set_entry(gdtp, GDT_INDEX_KDATA, 0x00000000, 0xffffffff, ACCESS_KDATA, GDT_FLAGS);
+        uint16_t udata = gdt_set_entry(gdtp, GDT_INDEX_UDATA, 0x00000000, 0xffffffff, ACCESS_UDATA, GDT_FLAGS);
 
         cpu_set_gdt(gdtp);
         
@@ -129,11 +129,11 @@ void arch_finish()
         pic_disable();
 }
 
-void attach_interrupt_handler(u8_t num, isr_t handler)
+void attach_interrupt_handler(uint8_t num, isr_t handler)
 {
         handler_t *h = 0, *n = 0;
-        u8_t i = 0;
-        u32_t head;
+        uint8_t i = 0;
+        uint32_t head;
 
         /* get the head */
         head = handlers_heads[num];
@@ -177,10 +177,10 @@ void attach_interrupt_handler(u8_t num, isr_t handler)
         }
 }
 
-void detach_interrupt_handler(u8_t num, isr_t handler)
+void detach_interrupt_handler(uint8_t num, isr_t handler)
 {
         /* get the head */
-        u32_t head = handlers_heads[num];
+        uint32_t head = handlers_heads[num];
         handler_t *h = &handlers[num][head];
 
         /* check for empty list */
@@ -207,7 +207,7 @@ void detach_interrupt_handler(u8_t num, isr_t handler)
                                 if (!h->prev) {
                                         /* Since the array is static it is guaranteed
                                          * to be contiguous */
-                                        handlers_heads[num] = (u32_t)(h->next - &handlers[num][0]);
+                                        handlers_heads[num] = (uint32_t)(h->next - &handlers[num][0]);
                                         /* if h->next is 0, the list is empty and head will be 0 */
                                 }
                         }
@@ -218,9 +218,9 @@ void detach_interrupt_handler(u8_t num, isr_t handler)
         } while ((h = h->prev) != 0);
 }
 
-handler_t *get_interrupt_handler(u8_t num)
+handler_t *get_interrupt_handler(uint8_t num)
 {
-        u32_t head = handlers_heads[num];
+        uint32_t head = handlers_heads[num];
         handler_t *h = &handlers[num][head];
 
         if (h->handler) {
@@ -230,12 +230,12 @@ handler_t *get_interrupt_handler(u8_t num)
         }
 }
 
-void enable_irq(u8_t irq)
+void enable_irq(uint8_t irq)
 {
         pic_enable_irq(irq);
 }
 
-void disable_irq(u8_t irq)
+void disable_irq(uint8_t irq)
 {
         pic_disable_irq(irq);
 }
@@ -250,14 +250,14 @@ void restore_irqs()
         //pic_restore();
 }
 
-void sleep(u32_t ms)
+void sleep(uint32_t ms)
 {
-        u32_t current = pit_get_ticks();
+        uint32_t current = pit_get_ticks();
 
         while (current + ms > pit_get_ticks()) ;
 }
 
-u32_t get_ticks_count()
+uint32_t get_ticks_count()
 {
         return pit_get_ticks();
 }
@@ -265,7 +265,7 @@ u32_t get_ticks_count()
 void isr_handler(void *r)
 {
         registers_t *regs = (registers_t *)r;
-        u8_t stop = 0;
+        uint8_t stop = 0;
 
         handler_t *h = get_interrupt_handler(regs->int_no);
 

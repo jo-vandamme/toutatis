@@ -9,9 +9,9 @@
 #define HIGH_BYTE       14
 #define LOW_BYTE        15
 
-static u16_t xpos = 0, ypos = 0;
-static u16_t *video_mem = (u16_t *)0xc00b8000;
-static u16_t attribute = 0x0f00;
+static uint16_t xpos = 0, ypos = 0;
+static uint16_t *video_mem = (uint16_t *)0xc00b8000;
+static uint16_t attribute = 0x0f00;
 static device_t vga_device;
 
 device_t *vga_init()
@@ -27,9 +27,9 @@ device_t *vga_init()
 
 void vga_clear()
 {
-        u16_t i;
+        uint16_t i;
         for (i = 0; i < COLS * ROWS; ++i) {
-                video_mem[i] = (u8_t)' ' | attribute;
+                video_mem[i] = (uint8_t)' ' | attribute;
         }
         xpos = ypos = 0;
         set_cursor_pos(0, 0);
@@ -63,8 +63,8 @@ void vga_print_char(const char c)
         /* any character greater than and including a space is
          * a printable character */
         else if (c >= ' ') {
-                u16_t *pos = video_mem + (ypos * COLS + xpos);
-                *pos = (u16_t)c | attribute;
+                uint16_t *pos = video_mem + (ypos * COLS + xpos);
+                *pos = (uint16_t)c | attribute;
                 ++xpos;
         }
 
@@ -77,7 +77,7 @@ void vga_print_char(const char c)
         set_cursor_pos(xpos, ypos);
 }
 
-void vga_print_dec(const u32_t value)
+void vga_print_dec(const uint32_t value)
 {
         int i = 0;
         char buffer[12];
@@ -88,7 +88,7 @@ void vga_print_dec(const u32_t value)
         }
 }
 
-void vga_print_hex(const u32_t value)
+void vga_print_hex(const uint32_t value)
 {
         int i = 0;
         char buffer[12];
@@ -99,7 +99,7 @@ void vga_print_hex(const u32_t value)
         }
 }
 
-size_t vga_write(u8_t *data, size_t len)
+size_t vga_write(uint8_t *data, size_t len)
 {
         size_t i;
 
@@ -128,14 +128,14 @@ void vga_print_str(const char *str)
         }
 }
 
-void vga_set_attribute(const u16_t attr)
+void vga_set_attribute(const uint16_t attr)
 {
         attribute = attr;
 }
 
 void vga_scroll()
 {
-        u16_t blank, temp;
+        uint16_t blank, temp;
 
         if (ypos >= ROWS) {
                 /* move the current text chunk back in the buffer by a line */
@@ -143,15 +143,15 @@ void vga_scroll()
                 memcpy(video_mem, video_mem + temp * COLS, (ROWS - temp) * COLS * 2);
 
                 /* finally, clear the last line */
-                blank = (u8_t)' ' | attribute;
+                blank = (uint8_t)' ' | attribute;
                 memsetw(video_mem + (ROWS - temp) * COLS, blank, COLS);
                 ypos = ROWS - 1;
         }
 }
 
-void get_cursor_pos(u16_t *x, u16_t *y)
+void get_cursor_pos(uint16_t *x, uint16_t *y)
 {
-        u16_t pos;
+        uint16_t pos;
 
         outb(CURS_CTRL, HIGH_BYTE);
         pos = inb(CURS_DATA) << 8;
@@ -163,9 +163,9 @@ void get_cursor_pos(u16_t *x, u16_t *y)
         *y = pos / COLS;
 }
 
-void set_cursor_pos(u16_t x, u16_t y)
+void set_cursor_pos(uint16_t x, uint16_t y)
 {
-        u16_t pos = y * COLS + x;
+        uint16_t pos = y * COLS + x;
 
         outb(CURS_CTRL, HIGH_BYTE);
         outb(CURS_DATA, pos >> 8);

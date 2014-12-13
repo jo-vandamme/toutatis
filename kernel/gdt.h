@@ -31,21 +31,21 @@ typedef enum
 
 typedef struct
 {
-        u16_t limit_low;
-        u16_t base_low;
-        u8_t  base_middle;
-        u8_t  access;
-        u8_t  flags;
-        u8_t  base_high;
+        uint16_t limit_low;
+        uint16_t base_low;
+        uint8_t  base_middle;
+        uint8_t  access;
+        uint8_t  flags;
+        uint8_t  base_high;
 }  __attribute__((packed)) gdt_entry_t;
 
 typedef struct
 {
-        u16_t limit;       /* size of the table minus one (last valid address in the table) */
+        uint16_t limit;       /* size of the table minus one (last valid address in the table) */
         gdt_entry_t *base; /* address of first GDT entry */
 }  __attribute__((packed)) gdt_ptr_t;
 
-u16_t gdt_set_entry(gdt_ptr_t *p, gdt_index_t index, u32_t base, u32_t limit, u8_t access, u8_t flags);
+uint16_t gdt_set_entry(gdt_ptr_t *p, gdt_index_t index, uint32_t base, uint32_t limit, uint8_t access, uint8_t flags);
 gdt_ptr_t *gdt_setup_pointer();
 
 #endif

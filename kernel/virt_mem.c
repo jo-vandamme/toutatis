@@ -3,8 +3,8 @@
 #include "virt_mem.h"
 #include "phys_mem.h"
 
-extern u32_t kernel_voffset;
-extern u32_t kernel_start;
+extern uint32_t kernel_voffset;
+extern uint32_t kernel_start;
 
 page_dir_t *current_dir = 0;
 
@@ -19,7 +19,7 @@ void vmm_init()
     memset(dir, 0, sizeof(page_dir_t));
 
     /* map [0MB-4MB] to [3GB-3GB+4MB] */
-    for (u32_t i = 0, frame = 0, virt = (u32_t)&kernel_voffset;
+    for (uint32_t i = 0, frame = 0, virt = (uint32_t)&kernel_voffset;
          i < 1024;
          ++i, frame += FRAME_SIZE, virt += FRAME_SIZE)
     {
@@ -48,7 +48,7 @@ int vmm_switch_page_directory(page_dir_t *dir)
     __asm__ volatile("mov %0, %%cr3" :: "r"((phys_addr_t)&dir->tables));
 
     /* enable paging */
-    u32_t cr0;
+    uint32_t cr0;
     __asm__ volatile("mov %%cr0, %0" : "=r"(cr0));
     cr0 |= 0x80000000; /* set bit 31 */
     __asm__ volatile("mov %0, %%cr0" :: "r"(cr0));
@@ -126,7 +126,7 @@ pte_t *vmm_get_page(virt_addr_t virt, int make, page_dir_t *dir)
 
 void page_fault(registers_t *regs)
 {
-    u32_t faulting_address;
+    uint32_t faulting_address;
     __asm__ volatile("mov %%cr2, %0" : "=r" (faulting_address));
 
     int present  = !(regs->err_code & (1 << 0)); // page not present

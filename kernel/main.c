@@ -13,9 +13,9 @@ void print_mmap(const multiboot_info_t *mbi);
 static device_t *vga_driver;
 static device_t *com_driver;
 
-extern u32_t kernel_voffset;
-extern u32_t kernel_start;
-extern u32_t kernel_end;
+extern uint32_t kernel_voffset;
+extern uint32_t kernel_start;
+extern uint32_t kernel_end;
 
 char *memory_types[] =
 {
@@ -25,14 +25,14 @@ char *memory_types[] =
     "ACPI NVS Memory"
 };
 
-void main(u32_t magic, multiboot_info_t *mbi)
+void main(uint32_t magic, multiboot_info_t *mbi)
 {
     vga_driver = vga_init();
     com_driver = serial_init();
     logging_init(vga_driver, com_driver);
         
     if (mbi->flags & MULTIBOOT_LOADER) {
-        kprintf(INFO, "Toutatis kernel booting from %s\n", (char *)(mbi->boot_loader_name + (u32_t)&kernel_voffset));
+        kprintf(INFO, "Toutatis kernel booting from %s\n", (char *)(mbi->boot_loader_name + (uint32_t)&kernel_voffset));
     }
     if (magic != MULTIBOOT_MAGIC) {
         kprintf(CRITICAL, "\033\014Bad magic number %#010x\n", magic);
@@ -44,7 +44,7 @@ void main(u32_t magic, multiboot_info_t *mbi)
     }
 
     kprintf(DEBUG, "kernel start: %#010x\nkernel end: %#010x\nkernel size: %u bytes\n", 
-            (u32_t)&kernel_start, (u32_t)&kernel_end, (u32_t)&kernel_end - (u32_t)&kernel_start);
+            (uint32_t)&kernel_start, (uint32_t)&kernel_end, (uint32_t)&kernel_end - (uint32_t)&kernel_start);
         
     arch_init();
 
@@ -58,8 +58,8 @@ void main(u32_t magic, multiboot_info_t *mbi)
 
     //interrupt(19);
     
-    u8_t *ptr = (u8_t *)(0xc03fffff + 0);
-    u8_t c = *ptr;
+    uint8_t *ptr = (uint8_t *)(0xc03fffff + 1);
+    uint8_t c = *ptr;
     *ptr = 1;
     (void)c;
 
@@ -72,12 +72,12 @@ void print_mmap(const multiboot_info_t *mbi)
 {
     unsigned long size;
 
-    kprintf(INFO, "\033\017Lower memory: \033\007%uKB\033\017 - Upper memory: \033\007%uMB\033\017\n",
+    kprintf(INFO, "Lower memory: %uKB - Upper memory: %uMB\n",
             mbi->mem_lower, mbi->mem_upper / 1024);
 
-    mmap_entry_t * mmap = (mmap_entry_t *)(mbi->mmap_addr + (u32_t)&kernel_voffset);
-    u32_t i = 1;
-    while ((u32_t)mmap < mbi->mmap_addr + (u32_t)&kernel_voffset + mbi->mmap_length)
+    mmap_entry_t * mmap = (mmap_entry_t *)(mbi->mmap_addr + (uint32_t)&kernel_voffset);
+    uint32_t i = 1;
+    while ((uint32_t)mmap < mbi->mmap_addr + (uint32_t)&kernel_voffset + mbi->mmap_length)
     {
         if (mmap->type > 4)
             continue;
@@ -85,15 +85,15 @@ void print_mmap(const multiboot_info_t *mbi)
         size = mmap->length_low / 1024;
 
         kprintf(INFO,
-                "\033\012%02u: \033\016%#010x%010x\033\017:\033\016%#010x%010x\033\017-> "
-                "%4u%s \033\017(%u - \033\007%s\033\017)\n",
-                i++, mmap->addr_high, mmap->addr_low, mmap->addr_high + mmap->length_high, mmap->addr_low + mmap->length_low-1,
+                "\033\012%02u: \033\016%#010x%010x\033\017:\033\016%#010x%010x\033\017-> %4u%s (%u - %s)\n",
+                i++, mmap->addr_high, mmap->addr_low, mmap->addr_high + mmap->length_high, 
+                mmap->addr_low + mmap->length_low-1,
                 (size > 1024) ? ((size / 1024 > 1024) ? size / 1024 / 1024 : size / 1024) : size,
                 (size > 1024) ? ((size / 1024 > 1024) ? "GB" : "MB") : "KB",
                 mmap->type, memory_types[mmap->type - 1]);
 
-        mmap = (mmap_entry_t *)((u32_t)mmap + mmap->size + sizeof(mmap->size));
+        mmap = (mmap_entry_t *)((uint32_t)mmap + mmap->size + sizeof(mmap->size));
     }
-    kprintf(INFO, "\033\017\n");
+    kprintf(INFO, "\n");
 }
 

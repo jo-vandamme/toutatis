@@ -9,38 +9,38 @@
 #define PAGE_TABLE_INDEX(virt)     (((virt) >> 12) & 0x3ff)
 #define PAGE_FRAME_ADDRESS(virt)   ((virt) & 0xfff);
 
-typedef u32_t virt_addr_t;
+typedef uint32_t virt_addr_t;
 
 /* page table entry */
 typedef struct
 {
-    u32_t present           : 1;
-    u32_t read_write        : 1;
-    u32_t user_supervisor   : 1;
-    u32_t write_through     : 1;
-    u32_t cache_disabled    : 1;
-    u32_t accessed          : 1;
-    u32_t dirty             : 1;
-    u32_t pt_attr_index     : 1;
-    u32_t global_page       : 1;
-    u32_t available         : 3;
-    u32_t frame_address     : 20;
+    uint32_t present           : 1;
+    uint32_t read_write        : 1;
+    uint32_t user_supervisor   : 1;
+    uint32_t write_through     : 1;
+    uint32_t cache_disabled    : 1;
+    uint32_t accessed          : 1;
+    uint32_t dirty             : 1;
+    uint32_t pt_attr_index     : 1;
+    uint32_t global_page       : 1;
+    uint32_t available         : 3;
+    uint32_t frame_address     : 20;
 } pte_t;
 
 /* page directory entry */
 typedef struct
 {
-    u32_t present           : 1;
-    u32_t read_write        : 1;
-    u32_t user_supervisor   : 1;
-    u32_t write_through     : 1;
-    u32_t cache_disabled    : 1;
-    u32_t accessed          : 1;
-    u32_t reserved          : 1;
-    u32_t page_size         : 1;
-    u32_t global_page       : 1;
-    u32_t available         : 3;
-    u32_t pt_base_address   : 20;
+    uint32_t present           : 1;
+    uint32_t read_write        : 1;
+    uint32_t user_supervisor   : 1;
+    uint32_t write_through     : 1;
+    uint32_t cache_disabled    : 1;
+    uint32_t accessed          : 1;
+    uint32_t reserved          : 1;
+    uint32_t page_size         : 1;
+    uint32_t global_page       : 1;
+    uint32_t available         : 3;
+    uint32_t pt_base_address   : 20;
 } pde_t;
 
 /* page table */

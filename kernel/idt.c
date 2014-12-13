@@ -4,9 +4,9 @@
 static idt_entry_t entries[IDT_NUM_ENTRIES];
 static idt_ptr_t   pointer;
 
-void idt_set_entry(idt_ptr_t *p, u8_t index, void (*callback)(), u16_t selector, u8_t flags)
+void idt_set_entry(idt_ptr_t *p, uint8_t index, void (*callback)(), uint16_t selector, uint8_t flags)
 {
-        u32_t base = (u32_t)callback;
+        uint32_t base = (uint32_t)callback;
 
         p->base[index].base_low  = base & 0xffff;
         p->base[index].base_high = (base >> 16) & 0xffff;

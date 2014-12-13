@@ -11,14 +11,14 @@
 #define RSHIFT      0x36
 #define CAPSLOCK    0x1d
 
-static u32_t shift_pressed = 0;
+static uint32_t shift_pressed = 0;
 
 #define KBD_BUF_SIZE    32
-static u8_t kbd_buffer[KBD_BUF_SIZE];
-static u8_t read_idx = 0;
-static volatile u8_t write_idx = 0;
+static uint8_t kbd_buffer[KBD_BUF_SIZE];
+static uint8_t read_idx = 0;
+static volatile uint8_t write_idx = 0;
 
-const u8_t keymap_us[2][128] =
+const uint8_t keymap_us[2][128] =
 {
     {
         0, 27, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', '\b', /*  0-14 */
@@ -89,7 +89,7 @@ const u8_t keymap_us[2][128] =
 static void keyboard_handler(registers_t *r)
 {
     (void)r;
-    u8_t scancode = inb(KBD_DATA);
+    uint8_t scancode = inb(KBD_DATA);
         
     /* if the top bit of the byte is set, a key has just been released */
     if (scancode & 0x80)
@@ -121,7 +121,7 @@ static void keyboard_handler(registers_t *r)
 
 int keyboard_getch()
 {
-    u8_t c;
+    uint8_t c;
 
     while (read_idx == write_idx) ;
     c = kbd_buffer[read_idx];

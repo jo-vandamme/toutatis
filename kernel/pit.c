@@ -22,7 +22,7 @@
 #define PIT_OCW_COUNTER1                0x40
 #define PIT_OCW_COUNTER2                0x80
 
-static volatile u32_t ticks = 0;
+static volatile uint32_t ticks = 0;
 
 static void pit_handler(registers_t *r)
 {
@@ -33,12 +33,12 @@ static void pit_handler(registers_t *r)
             kprintf(DEBUG, ".");
 }
 
-void pit_init(u32_t freq)
+void pit_init(uint32_t freq)
 {
         if (freq == 0)
                 return;
 
-        u32_t divisor = (u16_t)(PIT_MAX_FREQ / freq);
+        uint32_t divisor = (uint16_t)(PIT_MAX_FREQ / freq);
 
         outb(PIT_CTRL, PIT_OCW_COUNTER0 |
                        PIT_OCW_BINCOUNT_BINARY |
@@ -54,12 +54,12 @@ void pit_init(u32_t freq)
         pic_enable_irq(IRQ_TIMER);
 }
 
-u32_t pit_get_ticks()
+uint32_t pit_get_ticks()
 {
         return ticks;
 }
 
-void pit_set_ticks(u32_t val)
+void pit_set_ticks(uint32_t val)
 {
         ticks = val;
 }

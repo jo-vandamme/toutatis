@@ -29,7 +29,7 @@ void pic_disable_irq(pic_index_t irq);
 void pic_disable();
 void pic_restore();
 
-u8_t pic_acknowledge(pic_index_t irq);
-u32_t pic_get_bad_irqs();
+uint8_t pic_acknowledge(pic_index_t irq);
+uint32_t pic_get_bad_irqs();
 
 #endif
