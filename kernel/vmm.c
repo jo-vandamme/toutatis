@@ -1,3 +1,4 @@
+#include <system.h>
 #include <string.h>
 #include <vga.h>
 #include <vmm.h>
@@ -44,20 +45,20 @@ int vmm_switch_page_directory(page_dir_t *dir)
         return 0;
     current_dir = dir;
 
-    __asm__ volatile ("mov %0, %%cr3\n"     /* set page directory base register (PDBR) */
-                      "mov %%cr0, %%eax\n"
-                      "orl $0x80000000, %%eax\n"
-                      "mov %%eax, %%cr0\n"   /* enable paging */
-                      :: "r"((phys_addr_t)&dir->tables)
-                      : "%eax");
+    asm volatile ("mov %0, %%cr3\n"     /* set page directory base register (PDBR) */
+                  "mov %%cr0, %%eax\n"
+                  "orl $0x80000000, %%eax\n"
+                  "mov %%eax, %%cr0\n"   /* enable paging */
+                  :: "r"((phys_addr_t)&dir->tables)
+                  : "%eax");
     return 1;
 }
 
 void invalidate_page_tables_at(uintptr_t addr)
 {
-    __asm__ volatile ("movl %0, %%eax\n"
-                      "invlpg (%%eax)\n"
-                      :: "r"(addr) : "%eax");
+    asm volatile ("movl %0, %%eax\n"
+                  "invlpg (%%eax)\n"
+                  :: "r"(addr) : "%eax");
 }
 
 int vmm_alloc_page(pte_t *page, int is_kernel, int is_writeable)
@@ -131,7 +132,7 @@ pte_t *vmm_get_page(virt_addr_t virt, int make, page_dir_t *dir)
 void page_fault(registers_t *regs)
 {
     uint32_t faulting_address;
-    __asm__ volatile("mov %%cr2, %0" : "=r" (faulting_address));
+    asm volatile("mov %%cr2, %0" : "=r" (faulting_address));
 
     int present  = !(regs->err_code & (1 << 0)); // page not present
     int rw       = regs->err_code & (1 << 1);    // write operation
@@ -149,5 +150,5 @@ void page_fault(registers_t *regs)
     vga_print_hex(faulting_address);
     vga_print_str("\n");
 
-    halt();
+    HALT;
 }

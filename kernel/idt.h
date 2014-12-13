@@ -16,22 +16,27 @@
 #define IDT_FLAG_RING3          (0x03 << 5)
 #define IDT_FLAG_PRESENT        (0x01 << 7)
 
+#define IDT_FLAGS_RING0    (IDT_FLAG_PRESENT | IDT_FLAG_RING0 | IDT_FLAG_TYPE32INT)
+#define IDT_FLAGS_RING3    (IDT_FLAG_PRESENT | IDT_FLAG_RING3 | IDT_FLAG_TYPE32INT)
+
+#define KCODE_SEL 0x08
+
 typedef struct
 {
-        uint16_t base_low;  /* lower part of the interrupt function's offset address */
-        uint16_t selector;  /* selector of the interrupt function */
-        uint8_t  zero;      /* unused */
-        uint8_t  flags;     /* 0-3: gate type, 4: storage segment (0 for interrupts), 5-6: ring, 7: present */
-        uint16_t base_high; /* upper part of the interrupt function's offset address */
+    uint16_t base_low;  /* lower part of the interrupt function's offset address */
+    uint16_t selector;  /* selector of the interrupt function */
+    uint8_t  zero;      /* unused */
+    uint8_t  flags;     /* 0-3: gate type, 4: storage segment (0 for interrupts), 5-6: ring, 7: present */
+    uint16_t base_high; /* upper part of the interrupt function's offset address */
 } __attribute__((packed)) idt_entry_t;
 
 typedef struct
 {
-        uint16_t limit;
-        idt_entry_t *base;
+    uint16_t limit;
+    idt_entry_t *base;
 } __attribute__((packed)) idt_ptr_t;
 
-void idt_set_gate(idt_ptr_t *p, uint8_t index, void (*callback)(), uint16_t selector, uint8_t flags);
-idt_ptr_t *idt_setup_pointer();
+void idt_set_gate(uint8_t index, void (*callback)(), uint16_t selector, uint8_t flags);
+void idt_init();
 
 #endif

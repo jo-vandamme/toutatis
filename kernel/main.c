@@ -58,14 +58,14 @@ void main(uint32_t magic, multiboot_info_t *mbi)
 
     //interrupt(19);
     
-    uint8_t *ptr = (uint8_t *)(0xc03fffff + 1);
+    uint8_t *ptr = (uint8_t *)(0xc03fffff + 0);
     uint8_t c = *ptr;
     *ptr = 1;
     (void)c;
 
     serial_terminate();
 error:
-    for (;;) ;
+    STOP;
 }
 
 void print_mmap(const multiboot_info_t *mbi)

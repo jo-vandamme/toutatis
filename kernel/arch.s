@@ -1,18 +1,3 @@
-[global halt]
-halt:
-    hlt
-    ret
-
-[global sti]
-sti:
-    sti
-    ret
-
-[global cli]
-cli:
-    cli
-    ret
-
 [global io_wait]
 io_wait:
     in  al, 0x80

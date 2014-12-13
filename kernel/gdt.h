@@ -23,29 +23,30 @@
 
 typedef enum
 {
-        GDT_INDEX_KCODE         = 0x01,
-        GDT_INDEX_KDATA         = 0x02,
-        GDT_INDEX_UCODE         = 0x03,
-        GDT_INDEX_UDATA         = 0x04
+    GDT_INDEX_NULL  = 0x00,
+    GDT_INDEX_KCODE = 0x01,
+    GDT_INDEX_KDATA = 0x02,
+    GDT_INDEX_UCODE = 0x03,
+    GDT_INDEX_UDATA = 0x04
 } gdt_index_t;
 
 typedef struct
 {
-        uint16_t limit_low;
-        uint16_t base_low;
-        uint8_t  base_middle;
-        uint8_t  access;
-        uint8_t  flags;
-        uint8_t  base_high;
+    uint16_t limit_low;
+    uint16_t base_low;
+    uint8_t  base_middle;
+    uint8_t  access;
+    uint8_t  flags;
+    uint8_t  base_high;
 }  __attribute__((packed)) gdt_entry_t;
 
 typedef struct
 {
-        uint16_t limit;    /* size of the table minus one (last valid address in the table) */
-        gdt_entry_t *base; /* address of first GDT entry */
+    uint16_t limit;    /* size of the table minus one (last valid address in the table) */
+    gdt_entry_t *base; /* address of first GDT entry */
 }  __attribute__((packed)) gdt_ptr_t;
 
-uint16_t gdt_set_gate(gdt_ptr_t *p, gdt_index_t index, uint32_t base, uint32_t limit, uint8_t access, uint8_t flags);
-gdt_ptr_t *gdt_setup_pointer();
+void gdt_set_gate(gdt_index_t index, uint32_t base, uint32_t limit, uint8_t access, uint8_t flags);
+void gdt_init();
 
 #endif
