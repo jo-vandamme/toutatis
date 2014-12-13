@@ -37,6 +37,7 @@ typedef struct handler_s
 
 void arch_init();
 void arch_finish();
+void arch_reset();
 
 void enable_irq(uint8_t irq);
 void disable_irq(uint8_t irq);

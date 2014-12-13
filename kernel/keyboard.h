@@ -2,6 +2,7 @@
 #define __KERNEL_KEYBOARD_H__
 
 void keyboard_init();
-int keyboard_getch();
+uint8_t keyboard_getchar();
+uint8_t keyboard_lastchar();
 
 #endif

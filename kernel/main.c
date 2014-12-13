@@ -31,9 +31,11 @@ void main(uint32_t magic, multiboot_info_t *mbi)
     com_driver = serial_init();
     logging_init(vga_driver, com_driver);
         
-    if (mbi->flags & MULTIBOOT_LOADER) {
-        kprintf(INFO, "Toutatis kernel booting from %s\n", (char *)(mbi->boot_loader_name + (uint32_t)&kernel_voffset));
+    if (!(mbi->flags & MULTIBOOT_LOADER)) {
+        kprintf(CRITICAL, "\033\014Bootloader isn't multiboot compliant\n");
+        goto error;
     }
+    kprintf(INFO, "Toutatis kernel booting from %s\n", (char *)(mbi->boot_loader_name + (uint32_t)&kernel_voffset));
     if (magic != MULTIBOOT_MAGIC) {
         kprintf(CRITICAL, "\033\014Bad magic number %#010x\n", magic);
         goto error;
@@ -63,7 +65,15 @@ void main(uint32_t magic, multiboot_info_t *mbi)
     *ptr = 1;
     (void)c;
 
-    serial_terminate();
+    while (1) {
+        uint8_t c = keyboard_lastchar();
+        if (c == 'q') {
+            kprintf(INFO, "reboot\n");
+            arch_reset();
+        }
+    }
+
+    //serial_terminate();
 error:
     STOP;
 }

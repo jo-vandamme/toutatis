@@ -28,6 +28,25 @@ void arch_finish()
     pic_disable();
 }
 
+void arch_reset()
+{
+    INT_OFF;
+
+    /* flush the keyboard buffers (output and command) */
+    uint8_t temp;
+    do
+    {
+        temp = inb(0x64); /* empty user data */
+        if ((temp & 0x01) != 0)
+            (void)inb(0x60); /* empty keyboard data */
+    } while ((temp & 0x02) != 0);
+
+    /* pulse cpu reset line */
+    outw((short)0x64, (short)0xfe);
+
+    for (;;) HALT;
+}
+
 void attach_interrupt_handler(uint8_t num, isr_t handler)
 {
     handler_t *h = 0, *n = 0;

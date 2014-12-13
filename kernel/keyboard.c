@@ -11,6 +11,7 @@
 #define RSHIFT      0x36
 #define CAPSLOCK    0x1d
 
+static uint8_t last_char = 0;
 static uint32_t shift_pressed = 0;
 
 #define KBD_BUF_SIZE    32
@@ -112,21 +113,28 @@ static void keyboard_handler(registers_t *r)
 
             if (((write_idx + 1) % KBD_BUF_SIZE) != read_idx)
             {
-                kbd_buffer[write_idx] = keymap_us[shift_pressed][scancode];
+                last_char = keymap_us[shift_pressed][scancode];
+                kbd_buffer[write_idx] = last_char;
                 write_idx = (write_idx + 1) % KBD_BUF_SIZE;
             }
         }
     }
 }
 
-int keyboard_getch()
+uint8_t keyboard_getchar()
 {
     uint8_t c;
 
     while (read_idx == write_idx) ;
+
     c = kbd_buffer[read_idx];
     read_idx = (read_idx + 1) % KBD_BUF_SIZE;
     return c;
+}
+
+uint8_t keyboard_lastchar()
+{
+    return last_char;
 }
 
 void keyboard_init()
