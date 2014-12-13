@@ -1,7 +1,7 @@
-#include "keyboard.h"
-#include "arch.h"
-#include "pic.h"
-#include "vga.h"
+#include <system.h>
+#include <keyboard.h>
+#include <pic.h>
+#include <vga.h>
 
 #define IRQ_KBD     1
 #define KBD_DATA    0x60

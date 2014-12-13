@@ -1,5 +1,5 @@
+#include <system.h>
 #include <serial.h>
-#include <arch.h>
 #include <types.h>
 #include <vsprintf.h>
 

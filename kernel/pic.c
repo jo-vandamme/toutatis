@@ -1,5 +1,5 @@
-#include "pic.h"
-#include "arch.h"
+#include <system.h>
+#include <pic.h>
 
 #define PIC1_CTRL       0x20        /* master pic */
 #define PIC2_CTRL       0xa0        /* slave pic */

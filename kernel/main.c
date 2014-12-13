@@ -1,9 +1,9 @@
-#include <arch.h>
+#include <system.h>
 #include <multiboot.h>
 #include <vga.h>
 #include <logging.h>
-#include <phys_mem.h>
-#include <virt_mem.h>
+#include <pmm.h>
+#include <vmm.h>
 #include <serial.h>
 #include <driver.h>
 #include <keyboard.h>

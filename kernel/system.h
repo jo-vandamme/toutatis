@@ -1,11 +1,14 @@
-#ifndef __KERNEL_ARCH_H__
-#define __KERNEL_ARCH_H__
+#ifndef __KERNEL_SYSTEM_H__
+#define __KERNEL_SYSTEM_H__
 
 #include <types.h>
 
 #define IRQ(x)          ((x) + 0x20)
 #define SYSCALL_VECTOR  0x80
 #define TIMER_FREQ      100
+
+void gdt_flush(void *pointer);
+void idt_flush(void *pointer);
 
 typedef struct
 {

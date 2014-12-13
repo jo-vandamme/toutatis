@@ -6,7 +6,7 @@
 
 #define FRAME_SIZE 0x1000
 
-typedef uint32_t phys_addr_t;
+typedef uintptr_t phys_addr_t;
 
 int pmm_init(multiboot_info_t* mbi);
 

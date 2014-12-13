@@ -1,10 +1,10 @@
 #include <string.h>
-#include "gdt.h"
+#include <gdt.h>
 
 static gdt_entry_t entries[GDT_NUM_ENTRIES];
 static gdt_ptr_t   pointer;
 
-uint16_t gdt_set_entry(gdt_ptr_t *p, gdt_index_t index, uint32_t base, uint32_t limit, uint8_t access, uint8_t flags)
+uint16_t gdt_set_gate(gdt_ptr_t *p, gdt_index_t index, uint32_t base, uint32_t limit, uint8_t access, uint8_t flags)
 {
         p->base[index].base_low    = base & 0xffff;
         p->base[index].base_middle = (base >> 16) & 0xff;

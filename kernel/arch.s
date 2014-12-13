@@ -66,3 +66,23 @@ inl:
     in  eax, dx                 ; store the value read in eax
     ret
 
+[global gdt_flush]
+gdt_flush:
+        mov     eax, [esp + 4]  ; get gdt pointer
+        lgdt    [eax]           ; load new gdt pointer
+        mov     ax, 0x10        ; set all the segment selectors to kernel data descriptor
+        mov     ds, ax
+        mov     es, ax
+        mov     fs, ax
+        mov     gs, ax
+        mov     ss, ax
+        jmp     0x08:.reload_cs ; far jump to load the kernel code descriptor in cs
+    .reload_cs:
+        ret
+
+[global idt_flush]
+idt_flush:
+        mov     eax, [esp + 4]  ; get idt pointer
+        lidt    [eax]           ; load new idt pointer
+        ret
+

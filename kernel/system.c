@@ -1,9 +1,8 @@
-#include "arch.h"
-#include "cpu.h"
-#include "gdt.h"
-#include "idt.h"
-#include "pic.h"
-#include "pit.h"
+#include <system.h>
+#include <gdt.h>
+#include <idt.h>
+#include <pic.h>
+#include <pit.h>
 #include <logging.h>
 
 #define ACCESS_KCODE (GDT_ACCESS_PRESENT | GDT_ACCESS_RING0 | GDT_ACCESS_ALWAYS1 | GDT_ACCESS_RW | GDT_ACCESS_EXECUTE)
@@ -37,13 +36,24 @@ extern void isr11();
 extern void isr12();
 extern void isr13();
 extern void isr14();
-/* 15 is unassigned */
+extern void isr15();
 extern void isr16();
 extern void isr17();
 extern void isr18();
 extern void isr19();
-/* 20-31 are reserved */
-extern void isr128();
+extern void isr20();
+extern void isr21();
+extern void isr22();
+extern void isr23();
+extern void isr24();
+extern void isr25();
+extern void isr26();
+extern void isr27();
+extern void isr28();
+extern void isr29();
+extern void isr30();
+extern void isr31();
+extern void isr127();
 extern void irq0();
 extern void irq1();
 extern void irq2();
@@ -66,56 +76,68 @@ void arch_init()
         gdt_ptr_t *gdtp = gdt_setup_pointer();
         idt_ptr_t *idtp = idt_setup_pointer();
 
-        uint16_t kcode = gdt_set_entry(gdtp, GDT_INDEX_KCODE, 0x00000000, 0xffffffff, ACCESS_KCODE, GDT_FLAGS);
-        uint16_t ucode = gdt_set_entry(gdtp, GDT_INDEX_UCODE, 0x00000000, 0xffffffff, ACCESS_UCODE, GDT_FLAGS);
-        uint16_t kdata = gdt_set_entry(gdtp, GDT_INDEX_KDATA, 0x00000000, 0xffffffff, ACCESS_KDATA, GDT_FLAGS);
-        uint16_t udata = gdt_set_entry(gdtp, GDT_INDEX_UDATA, 0x00000000, 0xffffffff, ACCESS_UDATA, GDT_FLAGS);
+        uint16_t kcode = gdt_set_gate(gdtp, GDT_INDEX_KCODE, 0x00000000, 0xffffffff, ACCESS_KCODE, GDT_FLAGS);
+        uint16_t ucode = gdt_set_gate(gdtp, GDT_INDEX_UCODE, 0x00000000, 0xffffffff, ACCESS_UCODE, GDT_FLAGS);
+        uint16_t kdata = gdt_set_gate(gdtp, GDT_INDEX_KDATA, 0x00000000, 0xffffffff, ACCESS_KDATA, GDT_FLAGS);
+        uint16_t udata = gdt_set_gate(gdtp, GDT_INDEX_UDATA, 0x00000000, 0xffffffff, ACCESS_UDATA, GDT_FLAGS);
 
-        cpu_set_gdt(gdtp);
+        gdt_flush(gdtp);
         
-        idt_set_entry(idtp, 0,  isr0,  kcode, IDT_FLAGS_RING0);
-        idt_set_entry(idtp, 1,  isr1,  kcode, IDT_FLAGS_RING0);
-        idt_set_entry(idtp, 2,  isr2,  kcode, IDT_FLAGS_RING0);
-        idt_set_entry(idtp, 3,  isr3,  kcode, IDT_FLAGS_RING0);
-        idt_set_entry(idtp, 4,  isr4,  kcode, IDT_FLAGS_RING0);
-        idt_set_entry(idtp, 5,  isr5,  kcode, IDT_FLAGS_RING0);
-        idt_set_entry(idtp, 6,  isr6,  kcode, IDT_FLAGS_RING0);
-        idt_set_entry(idtp, 7,  isr7,  kcode, IDT_FLAGS_RING0);
-        idt_set_entry(idtp, 8,  isr8,  kcode, IDT_FLAGS_RING0);
-        idt_set_entry(idtp, 9,  isr9,  kcode, IDT_FLAGS_RING0);
-        idt_set_entry(idtp, 10, isr10, kcode, IDT_FLAGS_RING0);
-        idt_set_entry(idtp, 11, isr11, kcode, IDT_FLAGS_RING0);
-        idt_set_entry(idtp, 12, isr12, kcode, IDT_FLAGS_RING0);
-        idt_set_entry(idtp, 13, isr13, kcode, IDT_FLAGS_RING0);
-        idt_set_entry(idtp, 14, isr14, kcode, IDT_FLAGS_RING0);
-        idt_set_entry(idtp, 16, isr16, kcode, IDT_FLAGS_RING0);
-        idt_set_entry(idtp, 17, isr17, kcode, IDT_FLAGS_RING0);
-        idt_set_entry(idtp, 18, isr18, kcode, IDT_FLAGS_RING0);
-        idt_set_entry(idtp, 19, isr19, kcode, IDT_FLAGS_RING0);
+        idt_set_gate(idtp, 0,  isr0,  kcode, IDT_FLAGS_RING0);
+        idt_set_gate(idtp, 1,  isr1,  kcode, IDT_FLAGS_RING0);
+        idt_set_gate(idtp, 2,  isr2,  kcode, IDT_FLAGS_RING0);
+        idt_set_gate(idtp, 3,  isr3,  kcode, IDT_FLAGS_RING0);
+        idt_set_gate(idtp, 4,  isr4,  kcode, IDT_FLAGS_RING0);
+        idt_set_gate(idtp, 5,  isr5,  kcode, IDT_FLAGS_RING0);
+        idt_set_gate(idtp, 6,  isr6,  kcode, IDT_FLAGS_RING0);
+        idt_set_gate(idtp, 7,  isr7,  kcode, IDT_FLAGS_RING0);
+        idt_set_gate(idtp, 8,  isr8,  kcode, IDT_FLAGS_RING0);
+        idt_set_gate(idtp, 9,  isr9,  kcode, IDT_FLAGS_RING0);
+        idt_set_gate(idtp, 10, isr10, kcode, IDT_FLAGS_RING0);
+        idt_set_gate(idtp, 11, isr11, kcode, IDT_FLAGS_RING0);
+        idt_set_gate(idtp, 12, isr12, kcode, IDT_FLAGS_RING0);
+        idt_set_gate(idtp, 13, isr13, kcode, IDT_FLAGS_RING0);
+        idt_set_gate(idtp, 14, isr14, kcode, IDT_FLAGS_RING0);
+        idt_set_gate(idtp, 16, isr16, kcode, IDT_FLAGS_RING0);
+        idt_set_gate(idtp, 17, isr17, kcode, IDT_FLAGS_RING0);
+        idt_set_gate(idtp, 18, isr18, kcode, IDT_FLAGS_RING0);
+        idt_set_gate(idtp, 19, isr19, kcode, IDT_FLAGS_RING0);
+        idt_set_gate(idtp, 20, isr20, kcode, IDT_FLAGS_RING0);
+        idt_set_gate(idtp, 21, isr21, kcode, IDT_FLAGS_RING0);
+        idt_set_gate(idtp, 22, isr22, kcode, IDT_FLAGS_RING0);
+        idt_set_gate(idtp, 23, isr23, kcode, IDT_FLAGS_RING0);
+        idt_set_gate(idtp, 24, isr24, kcode, IDT_FLAGS_RING0);
+        idt_set_gate(idtp, 25, isr25, kcode, IDT_FLAGS_RING0);
+        idt_set_gate(idtp, 26, isr26, kcode, IDT_FLAGS_RING0);
+        idt_set_gate(idtp, 27, isr27, kcode, IDT_FLAGS_RING0);
+        idt_set_gate(idtp, 28, isr28, kcode, IDT_FLAGS_RING0);
+        idt_set_gate(idtp, 29, isr29, kcode, IDT_FLAGS_RING0);
+        idt_set_gate(idtp, 30, isr30, kcode, IDT_FLAGS_RING0);
+        idt_set_gate(idtp, 31, isr31, kcode, IDT_FLAGS_RING0);
 
         pic_init();
         pic_disable();
         
-        idt_set_entry(idtp, IRQ(0),  irq0,  kcode, IDT_FLAGS_RING0);
-        idt_set_entry(idtp, IRQ(1),  irq1,  kcode, IDT_FLAGS_RING0);
-        idt_set_entry(idtp, IRQ(2),  irq2,  kcode, IDT_FLAGS_RING0);
-        idt_set_entry(idtp, IRQ(3),  irq3,  kcode, IDT_FLAGS_RING0);
-        idt_set_entry(idtp, IRQ(4),  irq4,  kcode, IDT_FLAGS_RING0);
-        idt_set_entry(idtp, IRQ(5),  irq5,  kcode, IDT_FLAGS_RING0);
-        idt_set_entry(idtp, IRQ(6),  irq6,  kcode, IDT_FLAGS_RING0);
-        idt_set_entry(idtp, IRQ(7),  irq7,  kcode, IDT_FLAGS_RING0);
-        idt_set_entry(idtp, IRQ(8),  irq8,  kcode, IDT_FLAGS_RING0);
-        idt_set_entry(idtp, IRQ(9),  irq9,  kcode, IDT_FLAGS_RING0);
-        idt_set_entry(idtp, IRQ(10), irq10, kcode, IDT_FLAGS_RING0);
-        idt_set_entry(idtp, IRQ(11), irq11, kcode, IDT_FLAGS_RING0);
-        idt_set_entry(idtp, IRQ(12), irq12, kcode, IDT_FLAGS_RING0);
-        idt_set_entry(idtp, IRQ(13), irq13, kcode, IDT_FLAGS_RING0);
-        idt_set_entry(idtp, IRQ(14), irq14, kcode, IDT_FLAGS_RING0);
-        idt_set_entry(idtp, IRQ(15), irq15, kcode, IDT_FLAGS_RING0);
+        idt_set_gate(idtp, IRQ(0),  irq0,  kcode, IDT_FLAGS_RING0);
+        idt_set_gate(idtp, IRQ(1),  irq1,  kcode, IDT_FLAGS_RING0);
+        idt_set_gate(idtp, IRQ(2),  irq2,  kcode, IDT_FLAGS_RING0);
+        idt_set_gate(idtp, IRQ(3),  irq3,  kcode, IDT_FLAGS_RING0);
+        idt_set_gate(idtp, IRQ(4),  irq4,  kcode, IDT_FLAGS_RING0);
+        idt_set_gate(idtp, IRQ(5),  irq5,  kcode, IDT_FLAGS_RING0);
+        idt_set_gate(idtp, IRQ(6),  irq6,  kcode, IDT_FLAGS_RING0);
+        idt_set_gate(idtp, IRQ(7),  irq7,  kcode, IDT_FLAGS_RING0);
+        idt_set_gate(idtp, IRQ(8),  irq8,  kcode, IDT_FLAGS_RING0);
+        idt_set_gate(idtp, IRQ(9),  irq9,  kcode, IDT_FLAGS_RING0);
+        idt_set_gate(idtp, IRQ(10), irq10, kcode, IDT_FLAGS_RING0);
+        idt_set_gate(idtp, IRQ(11), irq11, kcode, IDT_FLAGS_RING0);
+        idt_set_gate(idtp, IRQ(12), irq12, kcode, IDT_FLAGS_RING0);
+        idt_set_gate(idtp, IRQ(13), irq13, kcode, IDT_FLAGS_RING0);
+        idt_set_gate(idtp, IRQ(14), irq14, kcode, IDT_FLAGS_RING0);
+        idt_set_gate(idtp, IRQ(15), irq15, kcode, IDT_FLAGS_RING0);
 
-        idt_set_entry(idtp, SYSCALL_VECTOR, isr128, kcode, IDT_FLAGS_RING3);
+        idt_set_gate(idtp, SYSCALL_VECTOR, isr127, kcode, IDT_FLAGS_RING3);
 
-        cpu_set_idt(idtp);
+        idt_flush(idtp);
 
         pit_init(TIMER_FREQ);
 

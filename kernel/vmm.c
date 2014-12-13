@@ -1,7 +1,7 @@
 #include <string.h>
 #include <vga.h>
-#include "virt_mem.h"
-#include "phys_mem.h"
+#include <vmm.h>
+#include <pmm.h>
 
 extern uint32_t kernel_voffset;
 extern uint32_t kernel_start;
@@ -44,16 +44,20 @@ int vmm_switch_page_directory(page_dir_t *dir)
         return 0;
     current_dir = dir;
 
-    /* set page directory base register (PDBR) */
-    __asm__ volatile("mov %0, %%cr3" :: "r"((phys_addr_t)&dir->tables));
-
-    /* enable paging */
-    uint32_t cr0;
-    __asm__ volatile("mov %%cr0, %0" : "=r"(cr0));
-    cr0 |= 0x80000000; /* set bit 31 */
-    __asm__ volatile("mov %0, %%cr0" :: "r"(cr0));
-
+    __asm__ volatile ("mov %0, %%cr3\n"     /* set page directory base register (PDBR) */
+                      "mov %%cr0, %%eax\n"
+                      "orl $0x80000000, %%eax\n"
+                      "mov %%eax, %%cr0\n"   /* enable paging */
+                      :: "r"((phys_addr_t)&dir->tables)
+                      : "%eax");
     return 1;
+}
+
+void invalidate_page_tables_at(uintptr_t addr)
+{
+    __asm__ volatile ("movl %0, %%eax\n"
+                      "invlpg (%%eax)\n"
+                      :: "r"(addr) : "%eax");
 }
 
 int vmm_alloc_page(pte_t *page, int is_kernel, int is_writeable)

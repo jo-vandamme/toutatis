@@ -31,7 +31,7 @@ typedef struct
         idt_entry_t *base;
 } __attribute__((packed)) idt_ptr_t;
 
-void idt_set_entry(idt_ptr_t *p, uint8_t index, void (*callback)(), uint16_t selector, uint8_t flags);
+void idt_set_gate(idt_ptr_t *p, uint8_t index, void (*callback)(), uint16_t selector, uint8_t flags);
 idt_ptr_t *idt_setup_pointer();
 
 #endif

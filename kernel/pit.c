@@ -1,6 +1,6 @@
-#include "pit.h"
-#include "pic.h"
-#include "arch.h"
+#include <system.h>
+#include <pit.h>
+#include <pic.h>
 #include <vga.h>
 #include <logging.h>
 

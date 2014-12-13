@@ -4,7 +4,7 @@
 static idt_entry_t entries[IDT_NUM_ENTRIES];
 static idt_ptr_t   pointer;
 
-void idt_set_entry(idt_ptr_t *p, uint8_t index, void (*callback)(), uint16_t selector, uint8_t flags)
+void idt_set_gate(idt_ptr_t *p, uint8_t index, void (*callback)(), uint16_t selector, uint8_t flags)
 {
         uint32_t base = (uint32_t)callback;
 

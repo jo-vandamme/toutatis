@@ -41,11 +41,11 @@ typedef struct
 
 typedef struct
 {
-        uint16_t limit;       /* size of the table minus one (last valid address in the table) */
+        uint16_t limit;    /* size of the table minus one (last valid address in the table) */
         gdt_entry_t *base; /* address of first GDT entry */
 }  __attribute__((packed)) gdt_ptr_t;
 
-uint16_t gdt_set_entry(gdt_ptr_t *p, gdt_index_t index, uint32_t base, uint32_t limit, uint8_t access, uint8_t flags);
+uint16_t gdt_set_gate(gdt_ptr_t *p, gdt_index_t index, uint32_t base, uint32_t limit, uint8_t access, uint8_t flags);
 gdt_ptr_t *gdt_setup_pointer();
 
 #endif

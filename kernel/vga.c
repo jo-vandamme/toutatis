@@ -1,8 +1,8 @@
+#include <system.h>
 #include <string.h>
 #include <utils.h>
-#include "vga.h"
-#include "arch.h"
-#include "driver.h"
+#include <vga.h>
+#include <driver.h>
 
 #define CURS_CTRL       0x3d4
 #define CURS_DATA       0x3d5
