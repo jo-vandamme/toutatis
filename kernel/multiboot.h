@@ -1,6 +1,8 @@
 #ifndef __KERNEL_MULTIBOOT_H__
 #define __KERNEL_MULTIBOOT_H__
 
+#include <types.h>
+
 #define MULTIBOOT_MAGIC         0x2badb002
 #define MULTIBOOT_MEMINFO       (1 << 0)
 #define MULTIBOOT_BOOTDEV       (1 << 1)
@@ -38,10 +40,8 @@ typedef struct __attribute__((packed))
 typedef struct __attribute__((packed))
 {
         uint32_t size;
-        uint32_t addr_low;
-        uint32_t addr_high;
-        uint32_t length_low;
-        uint32_t length_high;
+        uint64_t addr;
+        uint64_t length;
         uint32_t type;
 } mmap_entry_t;
 

@@ -11,8 +11,7 @@ KOBJS += kernel/bootstrap.o \
          kernel/pit.o \
          kernel/vsprintf.o \
          kernel/string.o \
-         kernel/pmm.o \
-         kernel/vmm.o \
+         kernel/paging.o \
          kernel/serial.o \
          kernel/logging.o \
          kernel/keyboard.o

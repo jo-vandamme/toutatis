@@ -1,15 +1,10 @@
-#ifndef __KERNEL_VIRT_MEM_H__
-#define __KERNEL_VIRT_MEM_H__
+#ifndef __KERNEL_PAGING_H__
+#define __KERNEL_PAGING_H__
 
 #include <system.h>
 #include <types.h>
-#include <pmm.h>
 
-#define PAGE_DIRECTORY_INDEX(virt) (((virt) >> 22) & 0x3ff)
-#define PAGE_TABLE_INDEX(virt)     (((virt) >> 12) & 0x3ff)
-#define PAGE_FRAME_ADDRESS(virt)   ((virt) & 0xfff);
-
-typedef uintptr_t virt_addr_t;
+#define FRAME_SIZE 0x1000
 
 /* page table entry */
 typedef struct
@@ -24,7 +19,7 @@ typedef struct
     uint32_t pt_attr_index     : 1;
     uint32_t global_page       : 1;
     uint32_t available         : 3;
-    uint32_t frame_address     : 20;
+    uint32_t frame             : 20;
 } pte_t;
 
 /* page directory entry */
@@ -40,7 +35,7 @@ typedef struct
     uint32_t page_size         : 1;
     uint32_t global_page       : 1;
     uint32_t available         : 3;
-    uint32_t pt_base_address   : 20;
+    uint32_t page_table_base   : 20;
 } pde_t;
 
 /* page table */
@@ -55,15 +50,25 @@ typedef struct
     pde_t tables[1024];
 } page_dir_t;
 
-void vmm_init();
+int test_frame(uint32_t frame);
+void set_frame(uint32_t frame);
+void clear_frame(uint32_t frame);
+int32_t first_free_frames(size_t num);
+int32_t first_free_frame();
 
-int vmm_switch_page_directory(page_dir_t *dir);
+uint32_t memory_used();
+uint32_t memory_total();
+
+void alloc_page(pte_t *page, int is_kernel, int is_writeable);
+void map_page(pte_t *page, int is_kernel, int is_writeable, uintptr_t phys);
+void free_page(pte_t *page);
+pte_t *get_page(uintptr_t virt, int make, page_dir_t *dir);
+void paging_init();
+void paging_finalize();
+void paging_mark_reserved(uintptr_t address);
+
+int switch_page_directory(page_dir_t *dir);
 void invalidate_page_tables_at(uintptr_t addr);
-
-pte_t *vmm_get_page(virt_addr_t virt, int make, page_dir_t *dir);
-
-int vmm_alloc_page(pte_t *page, int is_kernel, int is_writeable);
-void vmm_free_page(pte_t *page);
 
 void page_fault(registers_t *regs);
 

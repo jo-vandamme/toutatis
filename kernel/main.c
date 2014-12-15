@@ -2,8 +2,7 @@
 #include <multiboot.h>
 #include <vga.h>
 #include <logging.h>
-#include <pmm.h>
-#include <vmm.h>
+#include <paging.h>
 #include <serial.h>
 #include <driver.h>
 #include <keyboard.h>
@@ -50,17 +49,27 @@ void main(uint32_t magic, multiboot_info_t *mbi)
         
     arch_init();
 
-    if (pmm_init(mbi))
-        goto error;
+    paging_init((mbi->mem_lower + mbi->mem_upper) * 1024);
+    paging_mark_reserved((uint32_t)mbi - (uint32_t)&kernel_voffset);
 
-    vmm_init();
+    for (mmap_entry_t *mmap = (mmap_entry_t *)(mbi->mmap_addr + (uint32_t)&kernel_voffset);
+        (uint32_t)mmap < mbi->mmap_addr + (uint32_t)&kernel_voffset + mbi->mmap_length;
+        mmap = (mmap_entry_t *)((uint32_t)mmap + mmap->size + sizeof(mmap->size))) {
+        if (mmap->type == 2) {
+            for (uint64_t i = 0; i < mmap->length; i += FRAME_SIZE) {
+                paging_mark_reserved((mmap->addr + i) & 0xfffff000);
+            }
+        }
+    }
+    paging_finalize();
+
+    print_mmap(mbi);
 
     keyboard_init();
-    print_mmap(mbi);
 
     //interrupt(19);
     
-    uint8_t *ptr = (uint8_t *)(0xc03fffff + 0);
+    uint8_t *ptr = (uint8_t *)(0xc0153000 + 0);
     uint8_t c = *ptr;
     *ptr = 1;
     (void)c;
@@ -80,24 +89,23 @@ error:
 
 void print_mmap(const multiboot_info_t *mbi)
 {
-    unsigned long size;
+    size_t size;
 
     kprintf(INFO, "Lower memory: %uKB - Upper memory: %uMB\n",
             mbi->mem_lower, mbi->mem_upper / 1024);
 
     mmap_entry_t * mmap = (mmap_entry_t *)(mbi->mmap_addr + (uint32_t)&kernel_voffset);
     uint32_t i = 1;
+
     while ((uint32_t)mmap < mbi->mmap_addr + (uint32_t)&kernel_voffset + mbi->mmap_length)
     {
         if (mmap->type > 4)
             continue;
 
-        size = mmap->length_low / 1024;
+        size = mmap->length / 1024;
 
-        kprintf(INFO,
-                "\033\012%02u: \033\016%#010x%010x\033\017:\033\016%#010x%010x\033\017-> %4u%s (%u - %s)\n",
-                i++, mmap->addr_high, mmap->addr_low, mmap->addr_high + mmap->length_high, 
-                mmap->addr_low + mmap->length_low-1,
+        kprintf(INFO, "\033\012%02u: \033\016[%#020x\033\017:\033\016%#020x]\033\017 = %4u%s (%u - %s)\n",
+                i++, (uint32_t)(mmap->addr), (uint32_t)(mmap->addr + mmap->length - 1), 
                 (size > 1024) ? ((size / 1024 > 1024) ? size / 1024 / 1024 : size / 1024) : size,
                 (size > 1024) ? ((size / 1024 > 1024) ? "GB" : "MB") : "KB",
                 mmap->type, memory_types[mmap->type - 1]);
