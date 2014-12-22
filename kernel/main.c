@@ -3,6 +3,7 @@
 #include <vga.h>
 #include <logging.h>
 #include <paging.h>
+#include <kheap.h>
 #include <serial.h>
 #include <driver.h>
 #include <keyboard.h>
@@ -67,9 +68,19 @@ void main(uint32_t magic, multiboot_info_t *mbi)
 
     keyboard_init();
 
+    void *p1 = kmalloc(8);
+    void *p2 = kmalloc(8);
+    *((char *)p1) = 'a';
+    kprintf(INFO, "p1 @ 0x%x\n", (uint32_t)p1);
+    kprintf(INFO, "p2 @ 0x%x\n", (uint32_t)p2);
+    kfree(p2);
+    kfree(p1);
+    void *p3 = kmalloc(16);
+    kprintf(INFO, "p3 @ 0x%x\n", (uint32_t)p3);
+
     //interrupt(19);
     
-    uint8_t *ptr = (uint8_t *)(0xc0153000 + 0);
+    uint8_t *ptr = (uint8_t *)(0xc0152000);
     uint8_t c = *ptr;
     *ptr = 1;
     (void)c;

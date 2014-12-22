@@ -3,6 +3,7 @@
 #include <logging.h>
 #include <vga.h>
 #include <string.h>
+#include <kheap.h>
 
 #define BIT_TO_IDX(bit) ((bit) / 32)
 #define BIT_TO_OFF(bit) ((bit) % 32)
@@ -21,12 +22,14 @@ static uint32_t used_frames;
 page_dir_t *current_directory = 0;
 page_dir_t *kernel_directory = 0;
 
-int test_frame(uint32_t frame)
+extern heap_t *kheap;
+
+inline int test_frame(uint32_t frame)
 {
     return (frames[BIT_TO_IDX(frame)] & (1 << BIT_TO_OFF(frame)));
 }
 
-void set_frame(uint32_t frame)
+inline void set_frame(uint32_t frame)
 {
     if (test_frame(frame) == 0) {
         frames[BIT_TO_IDX(frame)] |= (1 << BIT_TO_OFF(frame));
@@ -34,7 +37,7 @@ void set_frame(uint32_t frame)
     }
 }
 
-void clear_frame(uint32_t frame)
+inline void clear_frame(uint32_t frame)
 {
     if (test_frame(frame) == 1) {
         frames[BIT_TO_IDX(frame)] &= ~(1 << BIT_TO_OFF(frame));
@@ -221,11 +224,19 @@ void paging_finalize()
     }
     kprintf(INFO, "mapping up to %#010x\n", (uintptr_t)frames + nframes / 8);
 
+    /* allocate pages for the kernel heap */
+    for (uint32_t i = KHEAP_START; i < KHEAP_START + KHEAP_INITIAL_SIZE; i += FRAME_SIZE) {
+        alloc_page(get_page(i, 1, kernel_directory), 0, 0);
+    }
+
     /* before we enable paging, we must register the page fault handler */
     attach_interrupt_handler(14, page_fault);
 
     /* switch to our page directory */
     switch_page_directory(kernel_directory);
+
+    /* initialize the kernel heap */
+    kheap = create_heap(KHEAP_START, KHEAP_START + KHEAP_INITIAL_SIZE, 0xdffff000, 0, 0);
 
     kprintf(INFO, "[paging] %u frames (%uMB)- %u used (%uKB) - %u free (%uMB)\n",
         nframes, nframes * FRAME_SIZE / (1024 * 1024),
