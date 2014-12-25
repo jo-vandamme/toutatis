@@ -22,8 +22,59 @@
 #define get_next_node(node)         ((header_t *)((uintptr_t)(node) + get_size(node)))
 #define get_real_size(size)         (rounded_block_size(size + USER_PTR_OFFSET + sizeof(footer_t))) 
 
-heap_t *kheap = 0;
+extern uint32_t kernel_end;
+uintptr_t placement_address = (uintptr_t)&kernel_end;
 extern page_dir_t *kernel_directory; 
+heap_t *kheap = 0;
+
+static uintptr_t kmalloc_int(uint32_t size, uint32_t alignment, uintptr_t *phys)
+{
+    if (kheap != 0) {
+        void *addr = alloc(size, alignment, kheap);
+        if (phys != 0) {
+            pte_t *page = get_page((uintptr_t)addr, 0, kernel_directory);
+            *phys = page->frame * FRAME_SIZE + ((uintptr_t)addr & 0xfff);
+        }
+        return (uintptr_t)addr;
+    }
+    else {
+        if (alignment != 0 && (placement_address % alignment)) {
+            placement_address -= (placement_address % alignment);
+            placement_address += alignment;
+        }
+        if (phys) {
+            *phys = placement_address;
+        }
+        uintptr_t tmp = placement_address;
+        placement_address += size;
+        return tmp;
+    }
+}
+
+inline void *kmalloc(uint32_t size)
+{
+    return (void *)kmalloc_int(size, 0, 0);
+}
+
+inline void *kmalloc_a(uint32_t size)
+{
+    return (void *)kmalloc_int(size, FRAME_SIZE, 0);
+}
+
+inline void *kmalloc_p(uint32_t size, uintptr_t *phys)
+{
+    return (void *)kmalloc_int(size, 0, phys);
+}
+
+inline void *kmalloc_ap(uint32_t size, uintptr_t *phys)
+{
+    return (void *)kmalloc_int(size, FRAME_SIZE, phys);
+}
+
+inline void kfree(void *p)
+{
+    free(p, kheap);
+}
 
 static inline uint32_t rounded_size(uint32_t size)
 {
@@ -306,8 +357,7 @@ static void expand(uint32_t new_size, heap_t *heap)
     }
 
     /* allocate some pages */
-    uint32_t old_size = heap->end_address - heap->start_address;
-    uint32_t i = old_size;
+    uint32_t i = heap->end_address - heap->start_address; /* old size */
     while (i < new_size) {
         alloc_page(get_page(heap->start_address + i, 1, kernel_directory),
                 (heap->supervisor) ? 1 : 0, (heap->readonly) ? 0 : 1);
@@ -351,25 +401,43 @@ void *alloc(uint32_t size, uint32_t alignment, heap_t *heap)
     /* get a block of size "size" or bigger */
     header_t *node = remove_node(&heap->tree, real_size, 1, 0, alignment);
 
-    /* expand heap */
     if (!node) {
-        /* first expand heap */
+        /* expand the heap */
         kprintf(INFO, "expanding heap\n");
+        uint32_t old_size = heap->end_address - heap->start_address;
+        uint32_t old_end_address = heap->end_address;
 
-        if (heap->tree.root == NULL) {
-            /* add node to the tree (first one) */
-            //node = 
-        }
-        else {
-            /* remove block with largest address */
-            footer_t *last_footer = (footer_t *)(heap->end_address - sizeof(footer_t));
-            header_t *node = remove_node(&heap->tree, get_size(last_footer->header), 0, (uintptr_t)last_footer->header, 0);
+        expand(old_size + real_size, heap);
+        uint32_t new_size = heap->end_address - heap->start_address;
 
-            /* add space to node and update header and footer */
+        /* create a block with the added space */
+        header_t *hole = (header_t *)old_end_address;
+        hole->size = new_size - old_size;
+        hole->magic = MAGIC;
+        footer_t *hole_footer = get_footer(hole);
+        hole_footer->header = hole;
+        hole_footer->magic = MAGIC;
 
+        footer_t *left_footer = (footer_t *)(old_end_address - sizeof(footer_t)); 
+        if ((uintptr_t)left_footer->header >= heap->start_address && is_free(left_footer->header)) {
+            /* remove block with largest address if free */
+            header_t *left_node = remove_node(&heap->tree, get_size(left_footer->header),
+                    0, (uintptr_t)left_footer->header, 0);
+            if (!left_node) {
+                kprintf(ERROR, "ERROR: expansion failed, left footer not found\n");
+                return 0;
+            }
+            /* expand block */
+            left_node->size = get_size(left_node) + get_size(hole);
+            hole_footer->header = left_node;
+            
             /* insert node back into the tree */
-            insert_node(&heap->tree, node); 
+            insert_node(&heap->tree, left_node);
+        } else {
+            insert_node(&heap->tree, hole);
         }
+        /* recurse, with a bigger heap this time */
+        return alloc(size, alignment, heap);
     }
 
     /* align block if required */
@@ -439,7 +507,7 @@ void free(void *p, heap_t *heap)
         mark_free(node);
     }
 
-    if (node->magic != MAGIC) {
+    if (node->magic != MAGIC || get_footer(node)->magic != MAGIC) {
         kprintf(ERROR, "Error: Wrong magic number, can't free block 0x%x\n", p);
         return;
     }
@@ -458,7 +526,9 @@ void free(void *p, heap_t *heap)
 
     /* left neighbour merge */
     footer_t *footer = (footer_t *)((char *)node - sizeof(footer_t));
-    if ((uintptr_t)node > heap->start_address && footer->magic == MAGIC && footer->header->magic == MAGIC && is_free(footer->header)) {
+    if ((uintptr_t)node > heap->start_address
+        && footer->magic == MAGIC && footer->header->magic == MAGIC
+        && is_free(footer->header)) {
         neighbour = footer->header;
         if (!remove_node(&heap->tree, get_size(neighbour), 0, (uintptr_t)neighbour, 0)) {
             kprintf(ERROR, "Error: Left neighbour not found in RB-tree!\n");
@@ -469,20 +539,32 @@ void free(void *p, heap_t *heap)
         get_footer(neighbour)->header = neighbour;
         node = neighbour;
     }
+
+    uint8_t insert = 1;
+    /* if the footer location is the end address, we can contract */
+    if ((uintptr_t)get_footer(node) + sizeof(footer_t) == heap->end_address) {
+        kprintf(INFO, "heap contraction\n");
+        uint32_t old_length = heap->end_address - heap->start_address;
+        uint32_t new_length = contract((uint32_t)((uintptr_t)node - heap->start_address), heap);
+
+        /* check how big the heap will be after resizing */
+        if (get_size(node) - (old_length - new_length) > 0) {
+            /* the node will still exist, but needs to be smaller */
+            node->size = get_size(node) - (old_length - new_length);
+            mark_free(node);
+            footer = get_footer(node);
+            footer->magic = MAGIC;
+            footer->header = node;
+        }
+        else {
+            /* the node must be removed so don't insert it */
+            insert = 0;
+        }
+    }
     
-    if (!insert_node(&heap->tree, node)) {
+    if (insert && !insert_node(&heap->tree, node)) {
         kprintf(ERROR, "Error: can't insert node into RB-tree\n");
     }
-}
-
-inline void *kmalloc(uint32_t size)
-{
-    return alloc(size, 0, kheap);
-}
-
-inline void kfree(void *p)
-{
-    free(p, kheap);
 }
 
 heap_t *create_heap(uintptr_t start, uintptr_t end, uintptr_t max, uint8_t supervisor, uint8_t readonly)

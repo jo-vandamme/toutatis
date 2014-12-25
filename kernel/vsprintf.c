@@ -252,6 +252,11 @@ int vsprintf(char *buf, const char *fmt, va_list args)
                                 loc += number(&buf[loc], val, 16, width, precision, flags);
                                 ++i;
                                 break;
+                        case 'b':
+                                val = va_arg(args, unsigned long);
+                                loc += number(&buf[loc], val, 2, width, precision, flags);
+                                ++i;
+                                break;
                         }
                         break;
                 default:

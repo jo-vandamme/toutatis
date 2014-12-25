@@ -8,12 +8,15 @@
 #define BIT_TO_IDX(bit) ((bit) / 32)
 #define BIT_TO_OFF(bit) ((bit) % 32)
 
-#define PAGE_DIRECTORY_INDEX(virt) (((virt) >> 22) & 0x3ff)
-#define PAGE_TABLE_INDEX(virt)     (((virt) >> 12) & 0x3ff)
-#define PAGE_FRAME(virt)           ((virt) & 0xfff);
+#define PAGE_DIRECTORY_INDEX(virt)  (((virt) >> 22) & 0x3ff)
+#define PAGE_TABLE_INDEX(virt)      (((virt) >> 12) & 0x3ff)
+#define PAGE_FRAME(virt)            ((virt) & 0xfff);
 
-extern uint32_t kernel_end;
-extern uint32_t kernel_voffset;
+#define physical_address(addr)      ((uintptr_t)(addr) - (uintptr_t)&kernel_voffset)
+#define virtual_address(addr)       ((uintptr_t)(addr) + (uintptr_t)&kernel_voffset)
+
+extern uintptr_t kernel_end;
+extern uintptr_t kernel_voffset;
 
 static uint32_t *frames;
 static uint32_t nframes;
@@ -22,6 +25,7 @@ static uint32_t used_frames;
 page_dir_t *current_directory = 0;
 page_dir_t *kernel_directory = 0;
 
+extern uintptr_t placement_address;
 extern heap_t *kheap;
 
 inline int test_frame(uint32_t frame)
@@ -150,34 +154,34 @@ void free_page(pte_t *page)
     page->frame = 0x0;
 }
 
+/* get a page based on a virtual address and a specific page directory,
+ * the page directory entry and page table will be created if necessary
+ * when the flag make is true */
 pte_t *get_page(uintptr_t virt, int make, page_dir_t *dir)
 {
     /* get page table entry */
-    pde_t *entry = &dir->tables[PAGE_DIRECTORY_INDEX(virt)];
+    pde_t *entry = &dir->tables[PAGE_DIRECTORY_INDEX(virt)]; /* pde_t points to a page table */
 
     /* get the page table and create it first if necessary */
     page_table_t *table;
     if (entry->present) {
-        table = (page_table_t *)(entry->page_table_base << 12);
+        table = (page_table_t *)(virtual_address(entry->page_table_base << 12));
     }
     else if (make) {
-        /* page table not present, allocate it */
-        int32_t frame = first_free_frame(); 
-        if (frame == -1) {
-            return 0;
-        }
-        set_frame(frame);
-        table = (page_table_t *)((uintptr_t)(frame * FRAME_SIZE));
-
-        /* clear page table */
+        /* page table not present, allocate and clear it */
+        table = (page_table_t *)kmalloc_a(sizeof(page_table_t));
         memset(table, 0, sizeof(page_table_t));
 
         /* map the page table */
         entry->present = 1;
         entry->read_write = 1;
-        entry->page_table_base = ((uintptr_t)table) >> 12;
-    }
+        entry->user_supervisor = 1;
+        entry->page_table_base = physical_address(table) >> 12;
+        kprintf(INFO, "virt 0x%x -> dir[0x%x] -> making page table @ 0x%x\n", 
+                virt, PAGE_DIRECTORY_INDEX(virt), table);
+        }
     else {
+        kprintf(ERROR, "Page directory entry not present\n");
         return 0;
     }
 
@@ -187,16 +191,10 @@ pte_t *get_page(uintptr_t virt, int make, page_dir_t *dir)
 void paging_init(uint32_t mem_size)
 {
     /* the bitmap is placed just above the kernel, properly aligned */
-    uint32_t kend = (uint32_t)&kernel_end + 1; 
-    if (kend % FRAME_SIZE) /* round up to next FRAME_SIZE */
-    {
-        kend -= (kend % FRAME_SIZE);
-        kend += FRAME_SIZE;
-    }
-    frames = (uint32_t *)kend;
     nframes = mem_size / FRAME_SIZE;
+    frames = (uint32_t *)kmalloc_a(nframes / 8); /* 1 byte = 8 frames */
+    memset(frames, 0, nframes / 8);
     used_frames = 0;
-    memset(frames, 0, nframes);
 
     kprintf(INFO, "[paging] Bitmap located at %#010x\n", frames);
 }
@@ -207,26 +205,39 @@ void paging_finalize()
     set_frame(0);
 
     /* create kernel directory table */
-    int32_t frame = first_free_frame();
-    if (frame == -1) {
-        return;
-    }
-    set_frame(frame);
-    kernel_directory = (page_dir_t *)((uintptr_t)(frame * FRAME_SIZE));
+    kernel_directory = (page_dir_t *)kmalloc_a(sizeof(page_dir_t));
     memset(kernel_directory, 0, sizeof(page_dir_t));
 
-    /* map kernel and bitmap (above 3GB) to low memory */
-    for (uint32_t phys = 0, virt = (uint32_t)&kernel_voffset;
-         virt <= (uintptr_t)frames + nframes / 8; 
-         phys += FRAME_SIZE, virt += FRAME_SIZE) 
+    /* map some pages in the kernel heap area.
+     * here we call get_page but not alloc_page. This causes
+     * page tables to be created where necessary. We can't allocate frames
+     * yet because they need to be identity mapped first below, and yet we can't
+     * increase placement_address between identity mapping and enabling the heap! */
+    uint32_t virt = 0;
+    for (virt = KHEAP_START;
+         virt < KHEAP_START + KHEAP_INITIAL_SIZE;
+         virt += FRAME_SIZE) 
     {
-        map_page(get_page(virt, 1, kernel_directory), 1, 0, phys);
+        get_page(virt, 1, kernel_directory);
     }
-    kprintf(INFO, "mapping up to %#010x\n", (uintptr_t)frames + nframes / 8);
+
+    /* map kernel and bitmap (above 3GB) to low memory */
+    uintptr_t phys = 0;
+    virt = (uintptr_t)&kernel_voffset;
+    while (virt < placement_address + FRAME_SIZE)
+    {
+        //kprintf(INFO, "=> mapping %x to %x\n", virt, phys);
+        map_page(get_page(virt, 1, kernel_directory), 1, 0, phys);
+        phys += FRAME_SIZE;
+        virt += FRAME_SIZE;
+    }
 
     /* allocate pages for the kernel heap */
-    for (uint32_t i = KHEAP_START; i < KHEAP_START + KHEAP_INITIAL_SIZE; i += FRAME_SIZE) {
-        alloc_page(get_page(i, 1, kernel_directory), 0, 0);
+    for (virt = KHEAP_START; 
+         virt < KHEAP_START + KHEAP_INITIAL_SIZE;
+         virt += FRAME_SIZE)
+    {
+        alloc_page(get_page(virt, 1, kernel_directory), 0, 0);
     }
 
     /* before we enable paging, we must register the page fault handler */
@@ -236,12 +247,15 @@ void paging_finalize()
     switch_page_directory(kernel_directory);
 
     /* initialize the kernel heap */
-    kheap = create_heap(KHEAP_START, KHEAP_START + KHEAP_INITIAL_SIZE, 0xdffff000, 0, 0);
+    kheap = create_heap(KHEAP_START, KHEAP_START + KHEAP_INITIAL_SIZE, 
+            KHEAP_START + HEAP_MAX_SIZE, 0, 0);
 
     kprintf(INFO, "[paging] %u frames (%uMB)- %u used (%uKB) - %u free (%uMB)\n",
         nframes, nframes * FRAME_SIZE / (1024 * 1024),
         used_frames, used_frames * FRAME_SIZE / 1024,
         nframes - used_frames, (nframes - used_frames) * FRAME_SIZE / (1024 * 1024));
+
+    kprintf(INFO, "frames bitmap located @ 0x%x\n", frames);
 }
 
 int switch_page_directory(page_dir_t *dir)
@@ -255,7 +269,7 @@ int switch_page_directory(page_dir_t *dir)
                   "mov %%cr0, %%eax\n"
                   "orl $0x80000000, %%eax\n"
                   "mov %%eax, %%cr0\n"   /* enable paging */
-                  :: "r"((uintptr_t)&dir->tables)
+                  :: "r"(physical_address(&dir->tables))
                   : "%eax");
     return 1;
 }

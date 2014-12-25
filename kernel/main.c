@@ -64,10 +64,6 @@ void main(uint32_t magic, multiboot_info_t *mbi)
     }
     paging_finalize();
 
-    print_mmap(mbi);
-
-    keyboard_init();
-
     void *p1 = kmalloc(8);
     void *p2 = kmalloc(8);
     *((char *)p1) = 'a';
@@ -77,13 +73,24 @@ void main(uint32_t magic, multiboot_info_t *mbi)
     kfree(p1);
     void *p3 = kmalloc(16);
     kprintf(INFO, "p3 @ 0x%x\n", (uint32_t)p3);
+    void *p4 = kmalloc(0x1a0000);
+    *((char *)p4) = 'z';
+    kprintf(INFO, "p4 @ 0x%x\n", (uint32_t)p4);
+    void *p5 = kmalloc(0x02);
+    kprintf(INFO, "p5 @ 0x%x\n", (uint32_t)p5);
+    kfree(p5);
+    kfree(p4);
+
+    print_mmap(mbi);
+
+    keyboard_init();
 
     //interrupt(19);
     
-    uint8_t *ptr = (uint8_t *)(0xc0152000);
+    /*uint8_t *ptr = (uint8_t *)(0xc0152000);
     uint8_t c = *ptr;
     *ptr = 1;
-    (void)c;
+    (void)c;*/
 
     while (1) {
         uint8_t c = keyboard_lastchar();
