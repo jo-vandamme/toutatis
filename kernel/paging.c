@@ -177,8 +177,6 @@ pte_t *get_page(uintptr_t virt, int make, page_dir_t *dir)
         entry->read_write = 1;
         entry->user_supervisor = 1;
         entry->page_table_base = physical_address(table) >> 12;
-        kprintf(INFO, "virt 0x%x -> dir[0x%x] -> making page table @ 0x%x\n", 
-                virt, PAGE_DIRECTORY_INDEX(virt), table);
         }
     else {
         kprintf(ERROR, "Page directory entry not present\n");
@@ -254,8 +252,6 @@ void paging_finalize()
         nframes, nframes * FRAME_SIZE / (1024 * 1024),
         used_frames, used_frames * FRAME_SIZE / 1024,
         nframes - used_frames, (nframes - used_frames) * FRAME_SIZE / (1024 * 1024));
-
-    kprintf(INFO, "frames bitmap located @ 0x%x\n", frames);
 }
 
 int switch_page_directory(page_dir_t *dir)

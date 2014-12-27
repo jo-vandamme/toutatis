@@ -15,6 +15,14 @@
 #define HALT    { asm volatile ("hlt"); }
 #define STOP    while (1) { HALT; }
 
+#define assert(x) { \
+    if (!(x)) { \
+        kprintf(CRITICAL, "\033\014Assertion failed: %s, at %s:%d (%s)\n", #x, \
+                __FILE__, __LINE__, __PRETTY_FUNCTION__); \
+        STOP; \
+    } \
+}
+
 void gdt_flush(void *pointer);
 void idt_flush(void *pointer);
 

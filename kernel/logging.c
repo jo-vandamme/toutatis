@@ -25,7 +25,7 @@ int kprintf(log_level_t level, const char *fmt, ...)
 
         com_driver->write((uint8_t *)buf, strlen(buf));
 
-        if (level >= INFO) {
+        if (level >= DEBUG) {
                 vga_driver->write((uint8_t *)buf, strlen(buf));
         }
 

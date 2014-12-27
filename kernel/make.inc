@@ -15,4 +15,7 @@ KOBJS += kernel/bootstrap.o \
          kernel/kheap.o \
          kernel/serial.o \
          kernel/logging.o \
-         kernel/keyboard.o
+         kernel/keyboard.o \
+         kernel/vfs.o \
+         kernel/vnode.o \
+         kernel/initrd.o

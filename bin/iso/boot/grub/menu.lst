@@ -6,6 +6,8 @@ color cyan/blue white/blue
 
 title Toutatis
 kernel /boot/kernel.elf
+module /boot/initrd.img
 
 title Toutatis zipped
 kernel /boot/kernel.elf.zip
+module /boot/initrd.img

@@ -403,7 +403,6 @@ void *alloc(uint32_t size, uint32_t alignment, heap_t *heap)
 
     if (!node) {
         /* expand the heap */
-        kprintf(INFO, "expanding heap\n");
         uint32_t old_size = heap->end_address - heap->start_address;
         uint32_t old_end_address = heap->end_address;
 
@@ -501,7 +500,7 @@ void free(void *p, heap_t *heap)
 
     /* don't free a node already freed */
     if (is_free(node)) {
-        kprintf(INFO, "node already free\n");
+        kprintf(ERROR, "Error: node already free\n");
         return;
     } else {
         mark_free(node);
@@ -543,7 +542,6 @@ void free(void *p, heap_t *heap)
     uint8_t insert = 1;
     /* if the footer location is the end address, we can contract */
     if ((uintptr_t)get_footer(node) + sizeof(footer_t) == heap->end_address) {
-        kprintf(INFO, "heap contraction\n");
         uint32_t old_length = heap->end_address - heap->start_address;
         uint32_t new_length = contract((uint32_t)((uintptr_t)node - heap->start_address), heap);
 

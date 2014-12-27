@@ -19,12 +19,18 @@ include kernel/make.inc
 	@echo "[CC]     "$@
 	@$(CC) -c $(CFLAGS) -o $@ $?
 
-all: clean $(KOBJS)
-	@echo "[LD]     "kernel.elf
+all: initrd clean $(KOBJS)
+	@echo "[LD]     kernel.elf"
 	@ld $(LDFLAGS) -Tkernel/link.ld $(KOBJS) -o ./bin/kernel.elf
 
 clean:
 	@rm -f $(KOBJS)
+
+initrd:
+	@echo "[CC]     make_initrd.c"
+	@$(CC) make_initrd.c -o ./bin/make_initrd
+	@cd bin/initrd && ../make_initrd `find . -type f | sed 's/.\///'`
+	@mv bin/initrd/initrd.img bin/iso/boot/
 
 iso: all
 	@cp bin/kernel.elf bin/iso/boot
