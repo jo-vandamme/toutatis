@@ -6,8 +6,9 @@
 
 #define INITRD_MAGIC 0xbf
 
-typedef struct
+typedef struct __attribute__((packed))
 {
+    char magic[7];
     uint32_t nfiles;
 } initrd_header_t;
 
@@ -19,6 +20,7 @@ typedef struct
     uint32_t length;
 } initrd_file_header_t;
 
-vnode_t *initrd_init(uintptr_t location);
+struct multiboot_info;
+void initrd_init(struct multiboot_info *location);
 
 #endif

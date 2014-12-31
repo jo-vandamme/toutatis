@@ -2,6 +2,7 @@
 #include <keyboard.h>
 #include <pic.h>
 #include <vga.h>
+#include <logging.h>
 
 #define IRQ_KBD     1
 #define KBD_DATA    0x60
@@ -141,4 +142,5 @@ void keyboard_init()
 {
     attach_interrupt_handler(IRQ(IRQ_KBD), keyboard_handler);
     pic_enable_irq(IRQ_KBD);
+    kprintf(INFO, "[kbd] Keyboard initialized\n");
 }

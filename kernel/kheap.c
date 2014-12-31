@@ -1,3 +1,4 @@
+#include <system.h>
 #include <paging.h>
 #include <logging.h>
 #include <vsprintf.h>
@@ -23,18 +24,25 @@
 #define get_real_size(size)         (rounded_block_size(size + USER_PTR_OFFSET + sizeof(footer_t))) 
 
 extern uint32_t kernel_end;
+extern uint32_t kernel_voffset;
 uintptr_t placement_address = (uintptr_t)&kernel_end;
 extern page_dir_t *kernel_directory; 
 heap_t *kheap = 0;
 
+static uint8_t volatile mem_lock = 0;
+
 static uintptr_t kmalloc_int(uint32_t size, uint32_t alignment, uintptr_t *phys)
 {
+    spin_lock(&mem_lock);
+
     if (kheap != 0) {
         void *addr = alloc(size, alignment, kheap);
         if (phys != 0) {
             pte_t *page = get_page((uintptr_t)addr, 0, kernel_directory);
             *phys = page->frame * FRAME_SIZE + ((uintptr_t)addr & 0xfff);
         }
+
+        spin_unlock(&mem_lock);
         return (uintptr_t)addr;
     }
     else {
@@ -43,10 +51,12 @@ static uintptr_t kmalloc_int(uint32_t size, uint32_t alignment, uintptr_t *phys)
             placement_address += alignment;
         }
         if (phys) {
-            *phys = placement_address;
+            *phys = placement_address - (uintptr_t)&kernel_voffset;
         }
         uintptr_t tmp = placement_address;
         placement_address += size;
+
+        spin_unlock(&mem_lock);
         return tmp;
     }
 }
@@ -73,7 +83,9 @@ inline void *kmalloc_ap(uint32_t size, uintptr_t *phys)
 
 inline void kfree(void *p)
 {
+    spin_lock(&mem_lock);
     free(p, kheap);
+    spin_unlock(&mem_lock);
 }
 
 static inline uint32_t rounded_size(uint32_t size)

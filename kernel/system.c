@@ -13,14 +13,26 @@ static uint32_t handlers_heads[IDT_NUM_ENTRIES] = { 0 };
 static void dump_registers(registers_t *regs);
 extern char *exception_messages[];
 
+inline void spin_lock(uint8_t volatile *lock) {
+    while (__sync_lock_test_and_set(lock, 0x01)) {
+    }
+}
+
+inline void spin_unlock(uint8_t volatile *lock) {
+    __sync_lock_release(lock);
+}
+
 void arch_init()
 {
     gdt_init();
     idt_init();
+    kprintf(INFO, "[system] GDT/IDT initialized\n");
 
     pic_init();
+    kprintf(INFO, "[system] PIC initialized\n");
 
     pit_init(TIMER_FREQ);
+    kprintf(INFO, "[system] PIT initialized\n");
 }
 
 void arch_finish()
@@ -30,7 +42,7 @@ void arch_finish()
 
 void arch_reset()
 {
-    INT_OFF;
+    cli();
 
     /* flush the keyboard buffers (output and command) */
     uint8_t temp;
@@ -44,7 +56,7 @@ void arch_reset()
     /* pulse cpu reset line */
     outw((short)0x64, (short)0xfe);
 
-    for (;;) HALT;
+    stop();
 }
 
 void attach_interrupt_handler(uint8_t num, isr_t handler)
@@ -79,7 +91,7 @@ void attach_interrupt_handler(uint8_t num, isr_t handler)
     }
     /* attach handler if a slot is available */
     if (n) {
-        INT_OFF;
+        cli();
         n->handler = handler;
         n->num = num;
         n->next = 0;
@@ -91,7 +103,7 @@ void attach_interrupt_handler(uint8_t num, isr_t handler)
             n->index = 1;
             n->prev = 0;
         }
-        INT_ON;
+        sti();
     }
 }
 
@@ -114,7 +126,7 @@ void detach_interrupt_handler(uint8_t num, isr_t handler)
     /* go through the list from tail to head and look for handler */
     do {
         if (h->handler == handler) {
-            INT_OFF;
+            cli();
             if (h->prev) {
                 h->prev->next = h->next;
             }
@@ -130,7 +142,7 @@ void detach_interrupt_handler(uint8_t num, isr_t handler)
                 }
             }
             h->handler = 0;
-            INT_ON;
+            sti();
             break;
         }
     } while ((h = h->prev) != 0);
@@ -180,9 +192,9 @@ uint32_t get_ticks_count()
     return pit_get_ticks();
 }
 
-void isr_handler(void *r)
+uintptr_t isr_handler(registers_t *regs)
 {
-    registers_t *regs = (registers_t *)r;
+    uintptr_t esp = (uintptr_t)regs;
     uint8_t stop = 0;
 
     handler_t *h = get_interrupt_handler(regs->int_no);
@@ -205,31 +217,37 @@ void isr_handler(void *r)
         }
         kprintf(ERROR, "\n");
         dump_registers(regs);
-        HALT;
+        halt();
     }
+
+    return esp;
 }
 
-void irq_handler(void *r)
+uintptr_t irq_handler(registers_t *regs)
 {
-    INT_OFF;
-    registers_t *regs = (registers_t *)r;
+    uintptr_t esp = (uintptr_t)regs;
     handler_t *h = 0;
 
     if (pic_acknowledge(regs->int_no)) {
         kprintf(NOTICE, "Spurious IRQ");
-        return; /* ignore spurious IRQs */
+        return esp; /* ignore spurious IRQs */
+    }
+
+    if (IRQ(regs->int_no) == 0) {
+        /* execute scheduler and overwrite esp */
     }
 
     h = get_interrupt_handler(IRQ(regs->int_no));
-    if (!h) {
+    if (!h && IRQ(regs->int_no) != 0) {
         kprintf(WARNING, "No handler for IRQ #%u", regs->int_no);
-        return;
+        return esp;
     }
     while (h) {
         h->handler(regs);
         h = h->next;
     }
-    INT_ON;
+
+    return esp;
 }
 
 static void dump_registers(registers_t *regs)
@@ -241,7 +259,7 @@ static void dump_registers(registers_t *regs)
             "ebp: %#010x esp: %#010x\n"
             "eip: %#010x efl: %#010x\n"
             "ss: %#04x cs: %#04x ds: %#04x\n"
-            "es: %#04x fs: %#04x gs: %#04x\n",
+            "es: %#04x fs: %#04x gs: %#04x\n\033\017",
             regs->eax, regs->ebx, regs->ecx, regs->edx,
             regs->esi, regs->edi, regs->ebp, regs->esp,
             regs->eip, regs->eflags,

@@ -84,47 +84,15 @@ IRQ 13
 IRQ 14
 IRQ 15
 
-; This is our common ISR stub. It saves the processor state, sets
+; This is our common interrupt stub. It saves the processor state, sets
 ; up for kernel mode segments, calls the C-level fault handler,
 ; and finally restores the stack frame
 
-[extern isr_handler]
-isr_common_stub:
-    ; the interrupt pushes ss, esp, eflags, cs, eip onto the stack
-    ; then it pushes the error code and our isr pushes the interrupt number
-    pusha               ; pushes edi, esi, ebp, esp, ebx, edx, ecx, eax
-    push    ds
-    push    es
-    push    fs
-    push    gs
+%macro INT_HANDLER_STUB 1
 
-    mov     ax, 0x10    ; load the kernel data segment descriptor
-    mov     ds, ax
-    mov     es, ax
-    mov     fs, ax
-    mov     gs, ax
-    
-    push    esp
-    call    isr_handler
-    pop     eax
-
-    pop     gs          ; reload the original data segment descriptor
-    pop     fs
-    pop     es
-    pop     ds
-    popa
-
-    add     esp, 8      ; cleans up the pushed error code and pushed ISR number
-    sti                 ; enable interrupts
-    iret                ; pops cs, eip, eflags, ss, esp
-
-; This is our common IRQ stub. It saves the processor state, sets
-; up for kernel mode segments, calls the C-level fault handler,
-; and finally restores the stack frame
-
-[extern irq_handler]
-irq_common_stub:
-    pusha
+[extern %1_handler]
+%1_common_stub:         ; the processor already pused ss, esp, eflags, cs, eip
+    pushad              ; pushes eax, ecx, edx, ebx, esp (befores pushes), ebp, esi, edi
     push    ds
     push    es
     push    fs
@@ -136,17 +104,23 @@ irq_common_stub:
     mov     fs, ax
     mov     gs, ax
 
-    push    esp
-    call    irq_handler
-    pop     eax
+    push    esp         ; esp is pointing below this push (4 bytes above top)
+    call    %1_handler
+    sub     eax, 4      ; eax contains esp, remove 4 to point to the stack's top
+    mov     esp, eax    ; load esp, could have been changed by handler
+    pop     eax         ; pop old esp
 
     pop     gs          ; reload the original data segment descriptor
     pop     fs
     pop     es
     pop     ds
-    popa
+    popad
 
     add     esp, 8      ; cleans up the stack (error code and isr number)
-    sti
-    iret                ; pops cs, eip, eflags, ss, esp
+    iretd               ; pops eip, cs, eflags, esp, ss
+    ; iretd will restore eflags and thus re-enable interrupts if needed
 
+%endmacro
+
+INT_HANDLER_STUB isr
+INT_HANDLER_STUB irq

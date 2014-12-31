@@ -41,7 +41,7 @@ _bootstrap:
         mov     gs, dx
         mov     ss, dx
 
-        mov     esp, stack + STACK_SIZE
+        mov     esp, stack_start + STACK_SIZE
         sub     esp, kernel_voffset
 
         call    enable_paging
@@ -65,6 +65,8 @@ start_in_higher_half:
 
         ; push the incoming multiboot headers
         add     ebx, kernel_voffset ; get virtual address of header pointer
+        push    stack_end          
+        push    stack_start       
         push    ebx                 ; header pointer
         push    eax                 ; header magic
 
@@ -124,7 +126,8 @@ enable_paging:
         ret
 
 section .bss
-align 4
+align 16
 
-stack:
+stack_start:
         resb STACK_SIZE
+stack_end:

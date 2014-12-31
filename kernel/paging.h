@@ -47,7 +47,10 @@ typedef struct
 /* page directory */
 typedef struct
 {
-    pde_t tables[1024];
+    pde_t entries[1024]; /* this must be the first field of the struct */
+    uintptr_t entries_phys_addr; /* physical address of the first field */
+
+    page_table_t *tables[1024]; /* array of pointers to page tables */
 } page_dir_t;
 
 int test_frame(uint32_t frame);
@@ -69,6 +72,8 @@ void paging_mark_reserved(uintptr_t address);
 
 int switch_page_directory(page_dir_t *dir);
 void invalidate_page_tables_at(uintptr_t addr);
+
+page_dir_t *clone_page_directory(page_dir_t *dir);
 
 void page_fault(registers_t *regs);
 

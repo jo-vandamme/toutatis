@@ -1,10 +1,7 @@
 #include <system.h>
 #include <pit.h>
 #include <pic.h>
-#include <vga.h>
 #include <logging.h>
-
-#define IRQ_TIMER                       0
 
 #define PIT_MAX_FREQ                    1193182
 #define PIT_DATA0                       0x40

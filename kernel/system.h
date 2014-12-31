@@ -8,20 +8,38 @@
 
 #define IRQ(x)          ((x) + 0x20)
 #define SYSCALL_VECTOR  0x7f
-#define TIMER_FREQ      100
+#define TIMER_FREQ      200
+#define IRQ_TIMER       0
 
-#define INT_OFF { asm volatile ("cli"); }
-#define INT_ON  { asm volatile ("sti"); }
-#define HALT    { asm volatile ("hlt"); }
-#define STOP    while (1) { HALT; }
+inline static void cli()
+{
+    asm volatile ("cli");
+}
+inline static void sti()
+{
+    asm volatile ("sti");
+}
+inline static void halt()
+{
+    asm volatile ("hlt");
+}
+inline static void stop()
+{
+    while (1) { halt(); }
+}
 
 #define assert(x) { \
     if (!(x)) { \
+        cli();  \
         kprintf(CRITICAL, "\033\014Assertion failed: %s, at %s:%d (%s)\n", #x, \
                 __FILE__, __LINE__, __PRETTY_FUNCTION__); \
-        STOP; \
+        stop(); \
     } \
 }
+
+// TODO: implement mutex like locklessinc.com/articles/locks/
+void spin_lock(uint8_t volatile *lock);
+void spin_unlock(uint8_t volatile *lock);
 
 void gdt_flush(void *pointer);
 void idt_flush(void *pointer);
@@ -69,5 +87,7 @@ void outl(uint16_t port, uint32_t data);
 uint8_t  inb(uint16_t port);
 uint16_t inw(uint16_t port);
 uint32_t inl(uint16_t port);
+
+//void copy_frame(uintptr_t src, uintptr_t dest);
 
 #endif

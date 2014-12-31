@@ -1,7 +1,6 @@
 #include <system.h>
 #include <paging.h>
 #include <logging.h>
-#include <vga.h>
 #include <string.h>
 #include <kheap.h>
 
@@ -11,9 +10,6 @@
 #define PAGE_DIRECTORY_INDEX(virt)  (((virt) >> 22) & 0x3ff)
 #define PAGE_TABLE_INDEX(virt)      (((virt) >> 12) & 0x3ff)
 #define PAGE_FRAME(virt)            ((virt) & 0xfff);
-
-#define physical_address(addr)      ((uintptr_t)(addr) - (uintptr_t)&kernel_voffset)
-#define virtual_address(addr)       ((uintptr_t)(addr) + (uintptr_t)&kernel_voffset)
 
 extern uintptr_t kernel_end;
 extern uintptr_t kernel_voffset;
@@ -159,31 +155,29 @@ void free_page(pte_t *page)
  * when the flag make is true */
 pte_t *get_page(uintptr_t virt, int make, page_dir_t *dir)
 {
-    /* get page table entry */
-    pde_t *entry = &dir->tables[PAGE_DIRECTORY_INDEX(virt)]; /* pde_t points to a page table */
+    assert(dir != NULL);
 
-    /* get the page table and create it first if necessary */
-    page_table_t *table;
-    if (entry->present) {
-        table = (page_table_t *)(virtual_address(entry->page_table_base << 12));
+    uint32_t dir_idx = PAGE_DIRECTORY_INDEX(virt);
+    if (dir->tables[dir_idx]) {
+        return &dir->tables[dir_idx]->pages[PAGE_TABLE_INDEX(virt)];
     }
     else if (make) {
         /* page table not present, allocate and clear it */
-        table = (page_table_t *)kmalloc_a(sizeof(page_table_t));
-        memset(table, 0, sizeof(page_table_t));
+        uintptr_t phys;
+        dir->tables[dir_idx] = (page_table_t *)kmalloc_ap(sizeof(page_table_t), &phys);
+        memset(dir->tables[dir_idx], 0, sizeof(page_table_t));
 
         /* map the page table */
-        entry->present = 1;
-        entry->read_write = 1;
-        entry->user_supervisor = 1;
-        entry->page_table_base = physical_address(table) >> 12;
-        }
+        dir->entries[dir_idx].present = 1;
+        dir->entries[dir_idx].read_write = 1;
+        dir->entries[dir_idx].user_supervisor = 1;
+        dir->entries[dir_idx].page_table_base = phys >> 12;
+        return &dir->tables[dir_idx]->pages[PAGE_TABLE_INDEX(virt)];
+    }
     else {
-        kprintf(ERROR, "Page directory entry not present\n");
+        kprintf(ERROR, "\033\014Page directory entry not present\n");
         return 0;
     }
-
-    return &table->pages[PAGE_TABLE_INDEX(virt)];
 }
 
 void paging_init(uint32_t mem_size)
@@ -194,7 +188,7 @@ void paging_init(uint32_t mem_size)
     memset(frames, 0, nframes / 8);
     used_frames = 0;
 
-    kprintf(INFO, "[paging] Bitmap located at %#010x\n", frames);
+    kprintf(INFO, "[paging] Frames bitmap located at %#010x\n", frames);
 }
 
 void paging_finalize()
@@ -203,8 +197,10 @@ void paging_finalize()
     set_frame(0);
 
     /* create kernel directory table */
-    kernel_directory = (page_dir_t *)kmalloc_a(sizeof(page_dir_t));
+    uintptr_t phys;
+    kernel_directory = (page_dir_t *)kmalloc_ap(sizeof(page_dir_t), &phys);
     memset(kernel_directory, 0, sizeof(page_dir_t));
+    kernel_directory->entries_phys_addr = phys;
 
     /* map some pages in the kernel heap area.
      * here we call get_page but not alloc_page. This causes
@@ -220,9 +216,10 @@ void paging_finalize()
     }
 
     /* map kernel and bitmap (above 3GB) to low memory */
-    uintptr_t phys = 0;
+    phys = 0;
     virt = (uintptr_t)&kernel_voffset;
-    while (virt < placement_address + FRAME_SIZE)
+    /* add a few frames to the placement address for the clone operation */
+    while (virt < placement_address + FRAME_SIZE*4)
     {
         //kprintf(INFO, "=> mapping %x to %x\n", virt, phys);
         map_page(get_page(virt, 1, kernel_directory), 1, 0, phys);
@@ -242,13 +239,15 @@ void paging_finalize()
     attach_interrupt_handler(14, page_fault);
 
     /* switch to our page directory */
-    switch_page_directory(kernel_directory);
+    current_directory = clone_page_directory(kernel_directory);
+    switch_page_directory(current_directory);
+    kprintf(INFO, "[paging] Paging installed\n");
 
     /* initialize the kernel heap */
     kheap = create_heap(KHEAP_START, KHEAP_START + KHEAP_INITIAL_SIZE, 
             KHEAP_START + HEAP_MAX_SIZE, 0, 0);
 
-    kprintf(INFO, "[paging] %u frames (%uMB)- %u used (%uKB) - %u free (%uMB)\n",
+    kprintf(INFO, "[paging] %u frames (%uMB) - %u used (%uKB) - %u free (%uMB)\n",
         nframes, nframes * FRAME_SIZE / (1024 * 1024),
         used_frames, used_frames * FRAME_SIZE / 1024,
         nframes - used_frames, (nframes - used_frames) * FRAME_SIZE / (1024 * 1024));
@@ -265,7 +264,7 @@ int switch_page_directory(page_dir_t *dir)
                   "mov %%cr0, %%eax\n"
                   "orl $0x80000000, %%eax\n"
                   "mov %%eax, %%cr0\n"   /* enable paging */
-                  :: "r"(physical_address(&dir->tables))
+                  :: "r"(dir->entries_phys_addr)
                   : "%eax");
     return 1;
 }
@@ -277,8 +276,78 @@ void invalidate_page_tables_at(uintptr_t addr)
                   :: "r"(addr) : "%eax");
 }
 
+static void copy_frame(uintptr_t src, uintptr_t dst)
+{
+    kprintf(INFO, "\033\012Copying %x to %x\033\017\n", src, dst);
+    /* find two regions of virtual memory that are not mapped
+     * and map them to both physical frames in order to do the copy
+     */
+    uintptr_t region_src = 0xe0000000;
+    uintptr_t region_dst = 0xe0000000;
+    (void)region_dst;
+
+    uint32_t idx = PAGE_DIRECTORY_INDEX(region_src);
+    kprintf(INFO, "idx = %x\n", idx);
+    kprintf(INFO, "\033\014Implement this\n");
+    stop();
+}
+
+static page_table_t *clone_page_table(page_table_t *table, uintptr_t *phys)
+{
+    kprintf(INFO, "cloning table %x\n", table);
+    page_table_t *clone = (page_table_t *)kmalloc_ap(sizeof(page_table_t), phys);
+    memset(clone, 0, sizeof(page_table_t));
+
+    for (int i = 0; i < 1024; ++i) {
+        if (table->pages[i].frame) {
+            /* allocate a new frame */
+            alloc_page(&clone->pages[i], 0, 0);
+            /* clone the flags */
+            uint32_t frame = clone->pages[i].frame;
+            clone->pages[i] = table->pages[i];
+            clone->pages[i].frame = frame;
+            /* physically copy the data */
+            copy_frame(table->pages[i].frame * FRAME_SIZE, 
+                       clone->pages[i].frame * FRAME_SIZE);
+        }
+    }
+    return clone;
+}
+
+page_dir_t *clone_page_directory(page_dir_t *dir)
+{
+    uintptr_t phys;
+    page_dir_t *clone = (page_dir_t *)kmalloc_ap(sizeof(page_dir_t), &phys);
+    memset(clone, 0, sizeof(page_dir_t));
+    clone->entries_phys_addr = phys;
+
+    /* clone the page tables */
+    for (int i = 0; i < 1024; ++i) {
+        if (!dir->tables[i]) { 
+            continue; 
+        }
+        if (kernel_directory->tables[i] == dir->tables[i]) {
+            kprintf(INFO, "linking dir->tables[%x] = %x\n", i, dir->tables[i]);
+            clone->tables[i] = dir->tables[i];
+            clone->entries[i] = dir->entries[i];
+        }
+        else {
+            uintptr_t phys;
+            kprintf(INFO, "cloning table dir->tables[%x]\n", i);
+            clone->tables[i] = clone_page_table(dir->tables[i], &phys);
+            //clone->entries[i].present = 1;
+            //clone->entries[i].read_write = 1;
+            //clone->entries[i].user_supervisor = 1;
+            clone->entries[i] = dir->entries[i];
+            clone->entries[i].page_table_base = phys >> 12;
+        }
+    }
+    return clone;
+}
+
 void page_fault(registers_t *regs)
 {
+    cli();
     uint32_t faulting_address;
     asm volatile("mov %%cr2, %0" : "=r" (faulting_address));
 
@@ -288,15 +357,27 @@ void page_fault(registers_t *regs)
     int reserved = regs->err_code & (1 << 3);    // overwritten cpu-reserved bits of pte
     int id       = regs->err_code & (1 << 4);    // occured during an instruction fetch
 
-    vga_print_str("\033\014Page fault! (");
-    if (present)  { vga_print_str("not present "); }
-    if (rw)       { vga_print_str("read-only "); }
-    if (us)       { vga_print_str("user-mode "); }
-    if (reserved) { vga_print_str("reserved "); }
-    if (id)       { vga_print_str("id "); }
-    vga_print_str("\b) at 0x");
-    vga_print_hex(faulting_address);
-    vga_print_str("\n");
+    kprintf(ERROR, "\033\014Page fault! (");
+    if (present)  { kprintf(ERROR, "not present "); }
+    if (rw)       { kprintf(ERROR, "read-only "); }
+    if (us)       { kprintf(ERROR, "user-mode "); }
+    if (reserved) { kprintf(ERROR, "reserved "); }
+    if (id)       { kprintf(ERROR, "id "); }
+    kprintf(ERROR, "\b) at 0x%x\n", faulting_address);
 
-    HALT;
+    kprintf(ERROR,
+            "eax: %#010x ebx: %#010x\n"
+            "ecx: %#010x edx: %#010x\n"
+            "esi: %#010x edi: %#010x\n"
+            "ebp: %#010x esp: %#010x\n"
+            "eip: %#010x efl: %#010x\n"
+            "ss: %#04x cs: %#04x ds: %#04x\n"
+            "es: %#04x fs: %#04x gs: %#04x\n\033\017",
+            regs->eax, regs->ebx, regs->ecx, regs->edx,
+            regs->esi, regs->edi, regs->ebp, regs->esp,
+            regs->eip, regs->eflags,
+            regs->ss, regs->cs, regs->ds,
+            regs->es, regs->fs, regs->gs);
+
+    stop();
 }

@@ -10,7 +10,7 @@
 #define MULTIBOOT_MMAP          (1 << 6)
 #define MULTIBOOT_LOADER        (1 << 9)
 
-typedef struct __attribute__((packed))
+struct multiboot_info
 {
         uint32_t flags;
         uint32_t mem_lower;
@@ -36,7 +36,7 @@ typedef struct __attribute__((packed))
         uint16_t vbe_interface_seg;
         uint16_t vbe_interface_off;
         uint16_t vbe_interface_len;
-} multiboot_info_t;
+} __attribute__((packed));
 
 typedef struct __attribute__((packed))
 {

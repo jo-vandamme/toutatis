@@ -9,8 +9,9 @@
 #include <keyboard.h>
 #include <initrd.h>
 #include <vfs.h>
+#include <string.h>
 
-void print_mmap(const multiboot_info_t *mbi);
+void print_mmap(const struct multiboot_info *mbi);
 
 static device_t *vga_driver;
 static device_t *com_driver;
@@ -19,7 +20,8 @@ extern uint32_t kernel_voffset;
 extern uint32_t kernel_start;
 extern uint32_t kernel_end;
 
-extern uintptr_t placement_address;
+uintptr_t stack_start;
+size_t stack_size;
 
 char *memory_types[] =
 {
@@ -29,35 +31,24 @@ char *memory_types[] =
     "ACPI NVS Memory"
 };
 
-void main(uint32_t magic, multiboot_info_t *mbi)
+void main(uint32_t magic, struct multiboot_info *mbi, 
+          uintptr_t esp, uintptr_t stack_end)
 {
+    stack_start = esp;
+    stack_size = stack_end - stack_start;
+
     vga_driver = vga_init();
     com_driver = serial_init();
     logging_init(vga_driver, com_driver);
         
     assert(magic == MULTIBOOT_MAGIC);
     assert(mbi->flags & MULTIBOOT_LOADER);
-    kprintf(INFO, "Toutatis kernel booting from %s\n", 
+    kprintf(INFO, "\033\012Toutatis kernel booting from %s\033\017\n", 
             (char *)(mbi->boot_loader_name + (uint32_t)&kernel_voffset));
 
-    /* find location of the initial ramdisk */
-    assert(mbi->flags & MULTIBOOT_MODS);
-    assert(mbi->mods_count > 0);
-    uintptr_t initrd_start = *((uintptr_t *)mbi->mods_addr) + (uintptr_t)&kernel_voffset;
-    uintptr_t initrd_end = *((uintptr_t *)(mbi->mods_addr + 4)) + (uintptr_t)&kernel_voffset;
-    // TODO: free the memory between the kernel and the modules
-    kprintf(INFO, "placement address = 0x%x\n", placement_address);
-    placement_address = initrd_end;
-    kprintf(INFO, "Initrd: start @ 0x%x end @ 0x%x len = 0x%x\n",
-            initrd_start, initrd_end, initrd_end - initrd_start);
-    vnode_t *node = initrd_init(initrd_start); 
-    (void)node;
-
-    kprintf(DEBUG, "kernel start: %#010x\nkernel end: %#010x\nkernel size: %u bytes\n", 
-            (uint32_t)&kernel_start, (uint32_t)&kernel_end, 
-            (uint32_t)&kernel_end - (uint32_t)&kernel_start);
-        
     arch_init();
+
+    initrd_init(mbi); 
 
     assert(mbi->flags & MULTIBOOT_MEMINFO);
     paging_init((mbi->mem_lower + mbi->mem_upper) * 1024);
@@ -75,10 +66,10 @@ void main(uint32_t magic, multiboot_info_t *mbi)
     }
     paging_finalize();
 
-    print_mmap(mbi);
-
     keyboard_init();
 
+    //print_mmap(mbi);
+    
     void *p1 = kmalloc(8);
     void *p2 = kmalloc(8);
     *((char *)p1) = 'a';
@@ -88,9 +79,11 @@ void main(uint32_t magic, multiboot_info_t *mbi)
     kfree(p1);
     void *p3 = kmalloc(16);
     kprintf(INFO, "p3 @ 0x%x\n", (uint32_t)p3);
-    void *p4 = kmalloc_a(0x1a0000);
+    uintptr_t phys;
+    void *p4 = kmalloc_ap(0x1a0000, &phys);
+    memset(p4, 0, 0x1a0000);
     *((char *)p4) = 'z';
-    kprintf(INFO, "p4 @ 0x%x\n", (uint32_t)p4);
+    kprintf(INFO, "p4 @ 0x%x phys = %x\n", (uint32_t)p4, phys);
     void *p5 = kmalloc(0x02);
     kprintf(INFO, "p5 @ 0x%x\n", (uint32_t)p5);
     kfree(p5);
@@ -106,10 +99,10 @@ void main(uint32_t magic, multiboot_info_t *mbi)
     }
 
     //serial_terminate();
-    STOP;
+    stop();
 }
 
-void print_mmap(const multiboot_info_t *mbi)
+void print_mmap(const struct multiboot_info *mbi)
 {
     size_t size;
 

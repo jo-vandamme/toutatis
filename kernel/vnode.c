@@ -1,18 +1,38 @@
 #include <vnode.h>
 #include <logging.h>
 #include <system.h>
+#include <kheap.h>
 
-int vnode_init(vnode_t *node, const struct vn_ops *ops, struct vfs *vfs, void *data)
+static uint32_t freelist_size = 0;
+static vnode_t *freelist_head = NULL;
+
+static vnode_t *vnode_get()
 {
-    assert(node != NULL);
-    assert(ops != NULL);
+    vnode_t *node;
+    if (freelist_size > 0) {
+        node = freelist_head; 
+        freelist_head = freelist_head->freelist;
+        --freelist_size;
+    }
+    else {
+        node = (vnode_t *)kmalloc(sizeof(vnode_t));
+    }
+    return node;
+}
 
+vnode_t *vnode_init(const struct vn_ops *ops, struct vfs *vfs, void *data)
+{
+    assert(ops != NULL);
+    assert(vfs != NULL);
+
+    vnode_t *node = vnode_get();
     node->ref_count = 1;
     node->vfs = vfs;
     node->ops = ops;
     node->data = data;
+    node->freelist = NULL;
 
-    return 0;
+    return node;
 }
 
 void vnode_kill(vnode_t *node)
@@ -20,10 +40,14 @@ void vnode_kill(vnode_t *node)
     assert(node != NULL);
     assert(node->ref_count == 1);
 
-    node->ref_count = 0;
-    node->vfs = NULL;
-    node->ops = NULL;
-    node->data = NULL;
+    if (freelist_size < VNODE_CACHE_SIZE) {
+        node->freelist = freelist_head;
+        freelist_head = node;
+        ++freelist_size;
+    }
+    else {
+        kfree(node);
+    }
 }
 
 void vnode_incref(vnode_t *node)
@@ -46,9 +70,10 @@ void vnode_decref(vnode_t *node)
     }
 
     if (release) {
-        if (VN_RECLAIM(node)) {
-            kprintf(WARNING, "VFS: VOP_RECLAIM error\n");
+        if (VOP_RECLAIM(node)) {
+            kprintf(WARNING, "[vfs] VOP_RECLAIM error\n");
         }
+        VN_KILL(node);
     }
 }
 
@@ -56,11 +81,11 @@ inline void vnode_check(vnode_t *node, const char *name, uintptr_t address)
 {
     if (!node) {
         kprintf(CRITICAL, "Null vnode\n");
-        STOP;
+        stop();
     }
     if (!address) {
         kprintf(CRITICAL, "No operation for %s\n", name);
-        STOP;
+        stop();
     }
 }
 
