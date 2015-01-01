@@ -8,7 +8,7 @@
 
 #define IRQ(x)          ((x) + 0x20)
 #define SYSCALL_VECTOR  0x7f
-#define TIMER_FREQ      200
+#define TIMER_FREQ      100
 #define IRQ_TIMER       0
 
 inline static void cli()

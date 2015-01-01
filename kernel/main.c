@@ -10,6 +10,7 @@
 #include <initrd.h>
 #include <vfs.h>
 #include <string.h>
+#include <process.h>
 
 void print_mmap(const struct multiboot_info *mbi);
 
@@ -22,6 +23,26 @@ extern uint32_t kernel_end;
 
 uintptr_t stack_start;
 size_t stack_size;
+
+unsigned char alph[] = "abcdefghijklmnopqrstuvwxyz";
+
+void func1()
+{
+    uint16_t *video = (uint16_t *)(0xc00b8000 + 100);
+    static unsigned int i = 0;
+    for (;;) {
+        *video = (uint16_t)alph[i++ % sizeof(alph)] | 0x0f00;
+    }
+}
+
+void func2()
+{
+    uint16_t *video = (uint16_t *)(0xc00b8000 + 104);
+    static unsigned i = 1;
+    for (;;) {
+        *video = (uint16_t)alph[i++ % sizeof(alph)] | 0x0f00;
+    }
+}
 
 char *memory_types[] =
 {
@@ -90,11 +111,28 @@ void main(uint32_t magic, struct multiboot_info *mbi,
     kfree(p4);
     kfree(p3);
 
+    const char proc_name[] = "Process 1";
+    process_t *proc = create_process(proc_name);
+
+    kprintf(INFO, "Creating threads\n");
+    thread_t *thread1 = create_thread(proc, func1, 1);
+    thread_t *thread2 = create_thread(proc, func2, 1);
+    (void)thread1;
+    (void)thread2;
+    start_multitasking();
+
+    unsigned int i = 0;
     while (1) {
+        /* print a char */
+        uint16_t *video = (uint16_t *)(0xc00b8000 + 80);
+        *video = (uint16_t)alph[i++ % sizeof(alph)] | 0x0f00;
+
         uint8_t c = keyboard_lastchar();
         if (c == 'q') {
-            kprintf(INFO, "reboot\n");
-            arch_reset();
+            kprintf(INFO, "toggling multitasking\n");
+            toggle_multitasking();
+            //kprintf(INFO, "reboot\n");
+            //arch_reset();
         }
     }
 

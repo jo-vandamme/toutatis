@@ -135,7 +135,9 @@ uint8_t keyboard_getchar()
 
 uint8_t keyboard_lastchar()
 {
-    return last_char;
+    uint8_t tmp = last_char;
+    last_char = '\0';
+    return tmp;
 }
 
 void keyboard_init()
