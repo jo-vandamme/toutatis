@@ -72,6 +72,12 @@ idt_flush:
         lidt    [eax]           ; load new idt pointer
         ret
 
+[global tss_flush]
+tss_flush:
+        mov ax, 0x2b            ; load the index of our TSS structure - it is 0x28, the
+        ltr ax                  ; 5th selector (entries of 8 bytes). We set the bottom two bits
+        ret                     ; for an RPL = 3
+
 [global read_eip]
 read_eip:
         pop eax                 ; get the return address

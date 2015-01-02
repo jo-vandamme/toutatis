@@ -5,11 +5,14 @@
 
 #define asm __asm__
 #define volatile __volatile__
+//#define asm __asm__ __volatile__
 
 #define IRQ(x)          ((x) + 0x20)
 #define SYSCALL_VECTOR  0x7f
-#define TIMER_FREQ      100
+#define TIMER_FREQ      1000
 #define IRQ_TIMER       0
+
+#define min(x, y)       ((x) < (y) ? (x) : (y))
 
 inline static void cli()
 {
@@ -43,13 +46,15 @@ void spin_unlock(uint8_t volatile *lock);
 
 void gdt_flush(void *pointer);
 void idt_flush(void *pointer);
+void tss_flush();
+void set_kernel_stack(uintptr_t stack);
 
 typedef struct
 {
     uint32_t gs, fs, es, ds;
-    uint32_t edi, esi, ebp, esp, ebx, edx, ecx, eax;
+    uint32_t ebp, edi, esi, edx, ecx, ebx, eax;
     uint32_t int_no, err_code;
-    uint32_t eip, cs, eflags, useresp, ss;
+    uint32_t eip, cs, eflags, esp, ss;
 } registers_t;
 
 typedef void (*isr_t)(registers_t *);

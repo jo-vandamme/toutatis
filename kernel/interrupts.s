@@ -92,7 +92,13 @@ IRQ 15
 
 [extern %1_handler]
 %1_common_stub:         ; the processor already pused ss, esp, eflags, cs, eip
-    pushad              ; pushes eax, ecx, edx, ebx, esp (befores pushes), ebp, esi, edi
+    push    eax
+    push    ebx
+    push    ecx
+    push    edx
+    push    esi
+    push    edi
+    push    ebp
     push    ds
     push    es
     push    fs
@@ -114,7 +120,13 @@ IRQ 15
     pop     fs
     pop     es
     pop     ds
-    popad
+    pop     ebp
+    pop     edi
+    pop     esi
+    pop     edx
+    pop     ecx
+    pop     ebx
+    pop     eax
 
     add     esp, 8      ; cleans up the stack (error code and isr number)
     iretd               ; pops eip, cs, eflags, esp, ss

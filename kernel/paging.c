@@ -222,7 +222,7 @@ void paging_finalize()
     while (virt < placement_address + FRAME_SIZE*4)
     {
         //kprintf(INFO, "=> mapping %x to %x\n", virt, phys);
-        map_page(get_page(virt, 1, kernel_directory), 1, 0, phys);
+        map_page(get_page(virt, 1, kernel_directory), 0, 0, phys);
         phys += FRAME_SIZE;
         virt += FRAME_SIZE;
     }
@@ -232,7 +232,7 @@ void paging_finalize()
          virt < KHEAP_START + KHEAP_INITIAL_SIZE;
          virt += FRAME_SIZE)
     {
-        alloc_page(get_page(virt, 1, kernel_directory), 0, 0);
+        alloc_page(get_page(virt, 1, kernel_directory), 0, 1);
     }
 
     /* before we enable paging, we must register the page fault handler */

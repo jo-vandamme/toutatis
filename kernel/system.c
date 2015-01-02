@@ -15,6 +15,7 @@ static void dump_registers(registers_t *regs);
 extern char *exception_messages[];
 
 extern int multitasking;
+extern tss_entry_t tss_entry;
 
 inline void spin_lock(uint8_t volatile *lock) {
     while (__sync_lock_test_and_set(lock, 0x01)) {
@@ -23,6 +24,11 @@ inline void spin_lock(uint8_t volatile *lock) {
 
 inline void spin_unlock(uint8_t volatile *lock) {
     __sync_lock_release(lock);
+}
+
+void set_kernel_stack(uintptr_t stack)
+{
+    tss_entry.esp0 = (uint32_t)stack;
 }
 
 void arch_init()

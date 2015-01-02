@@ -26,19 +26,22 @@ size_t stack_size;
 
 unsigned char alph[] = "abcdefghijklmnopqrstuvwxyz";
 
-void func1()
+void func1(unsigned int off)
 {
-    uint16_t *video = (uint16_t *)(0xc00b8000 + 100);
-    static unsigned int i = 0;
+    //uint16_t *video = (uint16_t *)(0xc00b8000 + off);
+    //static unsigned int i = 0;
+    int a = 0;
     for (;;) {
-        *video = (uint16_t)alph[i++ % sizeof(alph)] | 0x0f00;
+        ++a;
+        //*video = (uint16_t)alph[i++ % sizeof(alph)] | 0x0f00;
     }
+    (void)a;
 }
 
-void func2()
+void func2(unsigned int off)
 {
-    uint16_t *video = (uint16_t *)(0xc00b8000 + 104);
-    static unsigned i = 1;
+    uint16_t *video = (uint16_t *)(0xc00b8000 + off);
+    static unsigned i = 0;
     for (;;) {
         *video = (uint16_t)alph[i++ % sizeof(alph)] | 0x0f00;
     }
@@ -111,17 +114,17 @@ void main(uint32_t magic, struct multiboot_info *mbi,
     kfree(p4);
     kfree(p3);
 
-    const char proc_name[] = "Process 1";
-    process_t *proc = create_process(proc_name);
-
-    kprintf(INFO, "Creating threads\n");
-    thread_t *thread1 = create_thread(proc, func1, 1);
-    thread_t *thread2 = create_thread(proc, func2, 1);
-    (void)thread1;
-    (void)thread2;
     start_multitasking();
 
+    process_t *proc = create_process("Process 1", 1);
+    create_thread(proc, func2, (void *)90, 1, 0);
+    create_thread(proc, func2, (void *)92, 1, 0);
+    create_thread(proc, func2, (void *)94, 1, 0);
+    uint32_t id = create_thread(proc, func1, (void *)96, 1, 1);
+    (void)id;
+
     unsigned int i = 0;
+    unsigned int off = 0;
     while (1) {
         /* print a char */
         uint16_t *video = (uint16_t *)(0xc00b8000 + 80);
@@ -129,8 +132,11 @@ void main(uint32_t magic, struct multiboot_info *mbi,
 
         uint8_t c = keyboard_lastchar();
         if (c == 'q') {
+            //destroy_thread(id);
+            create_thread(proc, func1, (void *)(off + 500), 1, 1);
+            off += 2;
             kprintf(INFO, "toggling multitasking\n");
-            toggle_multitasking();
+            //toggle_multitasking();
             //kprintf(INFO, "reboot\n");
             //arch_reset();
         }

@@ -3,7 +3,7 @@
 
 #include <types.h>
 
-#define GDT_NUM_ENTRIES         5
+#define GDT_NUM_ENTRIES 6
 
 /* Access byte flags */
 #define GDT_ACCESS_ACCESSED     (0x01 << 0) /* accessed bit (set to 0, the cpu sets this to 1 when the segment is accessed) */
@@ -27,7 +27,8 @@ typedef enum
     GDT_INDEX_KCODE = 0x01,
     GDT_INDEX_KDATA = 0x02,
     GDT_INDEX_UCODE = 0x03,
-    GDT_INDEX_UDATA = 0x04
+    GDT_INDEX_UDATA = 0x04,
+    GDT_INDEX_TSS   = 0x05
 } gdt_index_t;
 
 typedef struct
@@ -42,11 +43,42 @@ typedef struct
 
 typedef struct
 {
+    uint32_t prev_tss;
+    uint32_t esp0;
+    uint32_t ss0;
+    uint32_t esp1;
+    uint32_t ss1;
+    uint32_t esp2;
+    uint32_t ss2;
+    uint32_t cr3;
+    uint32_t eip;
+    uint32_t eflags;
+    uint32_t eax;
+    uint32_t ecx;
+    uint32_t edx;
+    uint32_t ebx;
+    uint32_t esp;
+    uint32_t ebp;
+    uint32_t esi;
+    uint32_t edi;
+    uint32_t es;
+    uint32_t cs;
+    uint32_t ss;
+    uint32_t ds;
+    uint32_t fs;
+    uint32_t gs;
+    uint32_t ldt;
+    uint32_t trap;
+    uint32_t iomap_base;
+} __attribute__((packed)) tss_entry_t;
+
+typedef struct
+{
     uint16_t limit;    /* size of the table minus one (last valid address in the table) */
     gdt_entry_t *base; /* address of first GDT entry */
 }  __attribute__((packed)) gdt_ptr_t;
 
-void gdt_set_gate(gdt_index_t index, uint32_t base, uint32_t limit, uint8_t access, uint8_t flags);
+//void gdt_set_gate(gdt_index_t index, uint32_t base, uint32_t limit, uint8_t access, uint8_t flags);
 void gdt_init();
 
 #endif
