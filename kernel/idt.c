@@ -34,7 +34,7 @@ extern void isr28();
 extern void isr29();
 extern void isr30();
 extern void isr31();
-extern void isr127();
+extern void isr128();
 
 static idt_entry_t idt_entries[IDT_NUM_ENTRIES];
 static idt_ptr_t   idt_ptr;
@@ -89,7 +89,7 @@ void idt_init()
     idt_set_gate(30, isr30, KCODE_SEL, IDT_FLAGS_RING0);
     idt_set_gate(31, isr31, KCODE_SEL, IDT_FLAGS_RING0);
 
-    idt_set_gate(SYSCALL_VECTOR, isr127, KCODE_SEL, IDT_FLAGS_RING3);
+    idt_set_gate(SYSCALL_VECTOR, isr128, KCODE_SEL, IDT_FLAGS_RING3);
 
     idt_flush(&idt_ptr);
 }

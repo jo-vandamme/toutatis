@@ -9,3 +9,6 @@ change video mode
 VFS with ramdiskfs and ext2 or fat32...
 syscalls, extract generic functions to make a library for user and kernel code
 cr3 for user tasks
+CFS (completely fair scheduler) implementation -> red black tree library needed
+use the time stamp counter for processes (TSC)
+XXX: kheap => Got an Expansion failed error (Left footer not found) happened during thread freeing

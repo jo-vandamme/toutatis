@@ -19,4 +19,5 @@ KOBJS += kernel/bootstrap.o \
          kernel/vfs.o \
          kernel/vnode.o \
          kernel/initrd.o \
-         kernel/process.o
+         kernel/process.o \
+         kernel/syscall.o

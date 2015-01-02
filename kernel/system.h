@@ -8,7 +8,7 @@
 //#define asm __asm__ __volatile__
 
 #define IRQ(x)          ((x) + 0x20)
-#define SYSCALL_VECTOR  0x7f
+#define SYSCALL_VECTOR  0x80
 #define TIMER_FREQ      1000
 #define IRQ_TIMER       0
 
@@ -81,6 +81,9 @@ handler_t *get_interrupt_handler(uint8_t num);
 void interrupt(int no);
 
 uint32_t get_ticks_count();
+uint64_t get_cycles_count();
+
+void cpuid(int code, uint32_t *a, uint32_t *d);
 
 void sleep(uint32_t ms);
 void io_wait();

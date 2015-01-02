@@ -11,6 +11,7 @@
 #include <vfs.h>
 #include <string.h>
 #include <process.h>
+#include <syscall.h>
 
 void print_mmap(const struct multiboot_info *mbi);
 
@@ -28,14 +29,11 @@ unsigned char alph[] = "abcdefghijklmnopqrstuvwxyz";
 
 void func1(unsigned int off)
 {
-    //uint16_t *video = (uint16_t *)(0xc00b8000 + off);
-    //static unsigned int i = 0;
     int a = 0;
-    for (unsigned i = 0; i < 3000000; ++i)
+    for (unsigned i = 0; i < 1000000; ++i) {
         ++a;
-        //*video = (uint16_t)alph[i++ % sizeof(alph)] | 0x0f00;
-    int b = a + 1;
-    (void)b;
+        if (i % 1000 == 0) syscall_vga_print_str(".");
+    }
     for (;;) ;
 }
 
@@ -43,8 +41,18 @@ void func2(unsigned int off)
 {
     uint16_t *video = (uint16_t *)(0xc00b8000 + off);
     unsigned i = 0;
-    for (i = 0; i < 3000000; ++i)
+    for (i = 0; i < 1000000; ++i)
         *video = (uint16_t)alph[i++ % sizeof(alph)] | 0x0f00;
+}
+
+void reset()
+{
+    for (;;) {
+        uint8_t c = keyboard_lastchar();
+        if (c == 'r') {
+            arch_reset();
+        }
+    }
 }
 
 char *memory_types[] =
@@ -90,8 +98,6 @@ void main(uint32_t magic, struct multiboot_info *mbi,
     }
     paging_finalize();
 
-    keyboard_init();
-
     //print_mmap(mbi);
     
     void *p1 = kmalloc(8);
@@ -114,9 +120,14 @@ void main(uint32_t magic, struct multiboot_info *mbi,
     kfree(p4);
     kfree(p3);
 
-    start_multitasking();
+    syscall_init();
+
+    multitasking_init();
+
+    keyboard_init();
 
     process_t *proc = create_process("Process 1", 1);
+    create_thread(proc, reset, (void *)0,  1, 0, 0);
     create_thread(proc, func2, (void *)90, 1, 0, 0);
     create_thread(proc, func2, (void *)92, 1, 0, 0);
     create_thread(proc, func2, (void *)94, 1, 0, 0);
@@ -136,9 +147,6 @@ void main(uint32_t magic, struct multiboot_info *mbi,
             create_thread(proc, func1, (void *)0, 1, 1, 0);
             create_thread(proc, func2, (void *)(off + 500), 1, 0, 0);
             off += 2;
-            kprintf(INFO, "toggling multitasking\n");
-            //kprintf(INFO, "reboot\n");
-            //arch_reset();
         }
     }
 

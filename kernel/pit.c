@@ -26,8 +26,8 @@ static void pit_handler(registers_t *r)
         (void)r;
         ++ticks;
 
-        if (ticks % 100 == 0)
-            kprintf(DEBUG, ".");
+        //if (ticks % 100 == 0)
+        //    kprintf(DEBUG, ".");
 }
 
 void pit_init(uint32_t freq)

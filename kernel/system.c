@@ -28,8 +28,7 @@ inline void spin_unlock(uint8_t volatile *lock) {
 
 void set_kernel_stack(uintptr_t stack)
 {
-    tss_entry.esp0 = (uint32_t)stack;
-}
+    tss_entry.esp0 = (uint32_t)stack; }
 
 void arch_init()
 {
@@ -169,36 +168,48 @@ handler_t *get_interrupt_handler(uint8_t num)
     }
 }
 
-void enable_irq(uint8_t irq)
+inline void enable_irq(uint8_t irq)
 {
     pic_enable_irq(irq);
 }
 
-void disable_irq(uint8_t irq)
+inline void disable_irq(uint8_t irq)
 {
     pic_disable_irq(irq);
 }
 
-void disable_irqs()
+inline void disable_irqs()
 {
     pic_disable();
 }
 
-void restore_irqs()
+inline void restore_irqs()
 {
     //pic_restore();
 }
 
-void sleep(uint32_t ms)
+inline void sleep(uint32_t ms)
 {
     uint32_t current = pit_get_ticks();
 
     while (current + ms > pit_get_ticks()) ;
 }
 
-uint32_t get_ticks_count()
+inline uint32_t get_ticks_count()
 {
     return pit_get_ticks();
+}
+
+inline uint64_t get_cycles_count()
+{
+    uint64_t ret;
+    asm volatile ("rdtsc" : "=A"(ret));
+    return ret;
+}
+
+void cpuid(int code, uint32_t *a, uint32_t *d)
+{
+    asm volatile ("cpuid" : "=a"(*a), "=d"(*d) : "0"(code) : "ebx", "ecx");
 }
 
 uintptr_t isr_handler(registers_t *regs)
@@ -226,7 +237,7 @@ uintptr_t isr_handler(registers_t *regs)
         }
         kprintf(ERROR, "\n");
         dump_registers(regs);
-        halt();
+        for (;;) halt();
     }
 
     return esp;
@@ -238,7 +249,7 @@ uintptr_t irq_handler(registers_t *regs)
     handler_t *h = 0;
 
     if (pic_acknowledge(regs->int_no)) {
-        kprintf(NOTICE, "Spurious IRQ");
+        kprintf(DEBUG, "Spurious IRQ");
         return esp; /* ignore spurious IRQs */
     }
 
