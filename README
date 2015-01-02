@@ -7,8 +7,9 @@ for learning purposes.
 
 Features:
 - Higher half kernel
-- Physical memory management with a bitmap
-- Virtual memory management through paging
+- Paging
+- Red black tree heap
+- Multitasking
 
 To create an iso image using GRUB use:
 - make iso
