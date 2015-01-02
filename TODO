@@ -1,0 +1,11 @@
+assert function or macro
+write a debug_print macro that can be enabled/disabled at compile time
+more informative booting messages
+extract heap logic from kheap to make user's heaps with RB trees
+split process.h -> thread.h process.h scheduler.h
+user mode tasks
+VM86 task
+change video mode
+VFS with ramdiskfs and ext2 or fat32...
+syscalls, extract generic functions to make a library for user and kernel code
+cr3 for user tasks
