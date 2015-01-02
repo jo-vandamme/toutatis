@@ -31,20 +31,20 @@ void func1(unsigned int off)
     //uint16_t *video = (uint16_t *)(0xc00b8000 + off);
     //static unsigned int i = 0;
     int a = 0;
-    for (;;) {
+    for (unsigned i = 0; i < 3000000; ++i)
         ++a;
         //*video = (uint16_t)alph[i++ % sizeof(alph)] | 0x0f00;
-    }
-    (void)a;
+    int b = a + 1;
+    (void)b;
+    for (;;) ;
 }
 
 void func2(unsigned int off)
 {
     uint16_t *video = (uint16_t *)(0xc00b8000 + off);
-    static unsigned i = 0;
-    for (;;) {
+    unsigned i = 0;
+    for (i = 0; i < 3000000; ++i)
         *video = (uint16_t)alph[i++ % sizeof(alph)] | 0x0f00;
-    }
 }
 
 char *memory_types[] =
@@ -117,10 +117,10 @@ void main(uint32_t magic, struct multiboot_info *mbi,
     start_multitasking();
 
     process_t *proc = create_process("Process 1", 1);
-    create_thread(proc, func2, (void *)90, 1, 0);
-    create_thread(proc, func2, (void *)92, 1, 0);
-    create_thread(proc, func2, (void *)94, 1, 0);
-    uint32_t id = create_thread(proc, func1, (void *)96, 1, 1);
+    create_thread(proc, func2, (void *)90, 1, 0, 0);
+    create_thread(proc, func2, (void *)92, 1, 0, 0);
+    create_thread(proc, func2, (void *)94, 1, 0, 0);
+    uint32_t id = create_thread(proc, func1, (void *)96, 1, 1, 0);
     (void)id;
 
     unsigned int i = 0;
@@ -133,10 +133,10 @@ void main(uint32_t magic, struct multiboot_info *mbi,
         uint8_t c = keyboard_lastchar();
         if (c == 'q') {
             //destroy_thread(id);
-            create_thread(proc, func1, (void *)(off + 500), 1, 1);
+            create_thread(proc, func1, (void *)0, 1, 1, 0);
+            create_thread(proc, func2, (void *)(off + 500), 1, 0, 0);
             off += 2;
             kprintf(INFO, "toggling multitasking\n");
-            //toggle_multitasking();
             //kprintf(INFO, "reboot\n");
             //arch_reset();
         }

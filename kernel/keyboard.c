@@ -112,9 +112,9 @@ static void keyboard_handler(registers_t *r)
         {
             vga_print_char(keymap_us[shift_pressed][scancode]);
 
+            last_char = keymap_us[shift_pressed][scancode];
             if (((write_idx + 1) % KBD_BUF_SIZE) != read_idx)
             {
-                last_char = keymap_us[shift_pressed][scancode];
                 kbd_buffer[write_idx] = last_char;
                 write_idx = (write_idx + 1) % KBD_BUF_SIZE;
             }
