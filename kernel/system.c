@@ -192,7 +192,9 @@ inline void sleep(uint32_t ms)
 {
     uint32_t current = pit_get_ticks();
 
-    while (current + ms > pit_get_ticks()) ;
+    while (current + ms > pit_get_ticks()) {
+        halt();
+    }
 }
 
 inline uint32_t get_ticks_count()
@@ -249,7 +251,7 @@ uintptr_t irq_handler(registers_t *regs)
     handler_t *h = 0;
 
     if (pic_acknowledge(regs->int_no)) {
-        kprintf(DEBUG, "Spurious IRQ");
+        kprintf(DEBUG, "\033\014Spurious IRQ\n\033\017");
         return esp; /* ignore spurious IRQs */
     }
 
@@ -260,7 +262,7 @@ uintptr_t irq_handler(registers_t *regs)
 
     h = get_interrupt_handler(IRQ(regs->int_no));
     if (!h && IRQ(regs->int_no) != 0) { /* XXX: IRQ ?? why */
-        kprintf(WARNING, "No handler for IRQ #%u", regs->int_no);
+        kprintf(WARNING, "\033\014No handler for IRQ #%u\n\033\017", regs->int_no);
         return esp;
     }
     while (h) {
@@ -274,7 +276,7 @@ uintptr_t irq_handler(registers_t *regs)
 static void dump_registers(registers_t *regs)
 {
     kprintf(ERROR,
-            "eax: %#010x ebx: %#010x\n"
+            "\033\014eax: %#010x ebx: %#010x\n"
             "ecx: %#010x edx: %#010x\n"
             "esi: %#010x edi: %#010x\n"
             "ebp: %#010x esp: %#010x\n"

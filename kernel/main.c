@@ -13,6 +13,14 @@
 #include <process.h>
 #include <syscall.h>
 
+uint32_t x, y, z, w;
+uint32_t xorshift128(void)
+{
+    uint32_t t = x ^ (x << 11);
+    x = y; y = z; z = w;
+    return w = w ^ (w >> 19) ^ t ^ (t >> 8);
+}
+
 void print_mmap(const struct multiboot_info *mbi);
 
 static device_t *vga_driver;
@@ -30,18 +38,24 @@ unsigned char alph[] = "abcdefghijklmnopqrstuvwxyz";
 void func1(unsigned int off)
 {
     int a = 0;
-    for (unsigned i = 0; i < 1000000; ++i) {
+    syscall_vga_print_str(".");
+    for (unsigned i = 0; i < 5000000; ++i) {
         ++a;
-        if (i % 1000 == 0) syscall_vga_print_str(".");
+        //if (i % 1000 == 0) syscall_vga_print_str(".");
     }
-    for (;;) ;
+    syscall_thread_exit();
 }
 
 void func2(unsigned int off)
 {
+    x = 18;
+    y = 43;
+    z = 1118;
+    w = 8932;
     uint16_t *video = (uint16_t *)(0xc00b8000 + off);
-    unsigned i = 0;
-    for (i = 0; i < 1000000; ++i)
+    uint32_t i = 0, i_max = xorshift128();
+    i_max = 1000000;
+    for (i = 0; i < i_max; ++i)
         *video = (uint16_t)alph[i++ % sizeof(alph)] | 0x0f00;
 }
 
@@ -98,8 +112,6 @@ void main(uint32_t magic, struct multiboot_info *mbi,
     }
     paging_finalize();
 
-    //print_mmap(mbi);
-    
     void *p1 = kmalloc(8);
     void *p2 = kmalloc(8);
     *((char *)p1) = 'a';
@@ -120,38 +132,64 @@ void main(uint32_t magic, struct multiboot_info *mbi,
     kfree(p4);
     kfree(p3);
 
+    print_mmap(mbi);
+
     syscall_init();
 
     multitasking_init();
 
     keyboard_init();
 
-    process_t *proc = create_process("Process 1", 1);
-    create_thread(proc, reset, (void *)0,  1, 0, 0);
-    create_thread(proc, func2, (void *)90, 1, 0, 0);
-    create_thread(proc, func2, (void *)92, 1, 0, 0);
-    create_thread(proc, func2, (void *)94, 1, 0, 0);
-    uint32_t id = create_thread(proc, func1, (void *)96, 1, 1, 0);
-    (void)id;
-
-    unsigned int i = 0;
     unsigned int off = 0;
+    process_t *proc = create_process("Process 1", 1);
+    create_thread(proc, func2, (void *)(off +  0), 1, 0, 0);
+    create_thread(proc, func2, (void *)(off +  1), 1, 0, 0);
+    create_thread(proc, func2, (void *)(off +  2), 1, 0, 0);
+    create_thread(proc, func2, (void *)(off +  3), 1, 0, 0);
+    create_thread(proc, func2, (void *)(off +  4), 1, 0, 0);
+    create_thread(proc, func2, (void *)(off +  5), 1, 0, 0);
+    create_thread(proc, func2, (void *)(off +  6), 1, 0, 0);
+    create_thread(proc, func2, (void *)(off +  7), 1, 0, 0);
+    create_thread(proc, func2, (void *)(off +  8), 1, 0, 0);
+    create_thread(proc, func2, (void *)(off +  9), 1, 0, 0);
+    create_thread(proc, func2, (void *)(off + 10), 1, 0, 0);
+    create_thread(proc, func2, (void *)(off + 11), 1, 0, 0);
+    create_thread(proc, func2, (void *)(off + 12), 1, 0, 0);
+    create_thread(proc, func2, (void *)(off + 13), 1, 0, 0);
+    sleep(5);
+    create_thread(proc, func2, (void *)(off + 14), 1, 0, 0);
+    create_thread(proc, func2, (void *)(off + 15), 1, 0, 0);
+    create_thread(proc, func2, (void *)(off + 16), 1, 0, 0);
+    create_thread(proc, func2, (void *)(off + 17), 1, 0, 0);
+    create_thread(proc, func2, (void *)(off + 18), 1, 0, 0);
+    create_thread(proc, func2, (void *)(off + 19), 1, 0, 0);
+    create_thread(proc, func2, (void *)(off + 20), 1, 0, 0);
+    create_thread(proc, func2, (void *)(off + 21), 1, 0, 0);
+    create_thread(proc, func2, (void *)(off + 22), 1, 0, 0);
+    create_thread(proc, func2, (void *)(off + 23), 1, 0, 0);
+    create_thread(proc, func2, (void *)(off + 24), 1, 0, 0);
+    create_thread(proc, func2, (void *)(off + 25), 1, 0, 0);
+
+    for (;;);
+/*
+    unsigned int i = 0;
     while (1) {
-        /* print a char */
+        sleep(2);
+
         uint16_t *video = (uint16_t *)(0xc00b8000 + 80);
         *video = (uint16_t)alph[i++ % sizeof(alph)] | 0x0f00;
-
-        uint8_t c = keyboard_lastchar();
-        if (c == 'q') {
-            //destroy_thread(id);
+        
+        create_thread(proc, func2, (void *)(off + 500), 1, 0, 0);
+        off += 2;
+        off %= (80 * 25);
+        if (keyboard_lastchar() == 'u') {
             create_thread(proc, func1, (void *)0, 1, 1, 0);
-            create_thread(proc, func2, (void *)(off + 500), 1, 0, 0);
-            off += 2;
         }
     }
 
     //serial_terminate();
     stop();
+    */
 }
 
 void print_mmap(const struct multiboot_info *mbi)

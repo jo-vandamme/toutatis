@@ -44,6 +44,7 @@ void syscall_init(void);
         int a; asm volatile("int $0x80" : "=a" (a) : "0" (num), "b" ((int)p1), "c" ((int)p2), "d"((int)p3), "S" ((int)p4), "D" ((int)p5)); \
         return a; \
 
+DECL_SYSCALL0(thread_exit)
 DECL_SYSCALL1(vga_print_str, const char *)
 DECL_SYSCALL1(vga_print_dec, const uint32_t)
 DECL_SYSCALL1(vga_print_hex, const uint32_t)

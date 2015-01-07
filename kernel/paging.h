@@ -45,7 +45,7 @@ typedef struct
 } page_table_t;
 
 /* page directory */
-typedef struct
+typedef struct page_dir
 {
     pde_t entries[1024]; /* this must be the first field of the struct */
     uintptr_t entries_phys_addr; /* physical address of the first field */

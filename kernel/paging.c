@@ -22,7 +22,7 @@ page_dir_t *current_directory = 0;
 page_dir_t *kernel_directory = 0;
 
 extern uintptr_t placement_address;
-extern heap_t *kheap;
+extern allocator_t *kheap;
 
 inline int test_frame(uint32_t frame)
 {
@@ -244,8 +244,10 @@ void paging_finalize()
     kprintf(INFO, "[paging] Paging installed\n");
 
     /* initialize the kernel heap */
-    kheap = create_heap(KHEAP_START, KHEAP_START + KHEAP_INITIAL_SIZE, 
-            KHEAP_START + HEAP_MAX_SIZE, 0, 0);
+    kheap = create_mem_allocator(KHEAP_START, KHEAP_START + KHEAP_INITIAL_SIZE, 
+            HEAP_MIN_SIZE, HEAP_MAX_SIZE, 0, 0, kernel_directory);
+    //kheap = create_heap(KHEAP_START, KHEAP_START + KHEAP_INITIAL_SIZE, 
+    //        KHEAP_START + HEAP_MAX_SIZE, 0, 0);
 
     kprintf(INFO, "[paging] %u frames (%uMB) - %u used (%uKB) - %u free (%uMB)\n",
         nframes, nframes * FRAME_SIZE / (1024 * 1024),

@@ -1,22 +1,25 @@
 #include <system.h>
 //#include <logging.h>
 #include <vga.h>
+#include <process.h>
 #include <syscall.h>
 
-DEFN_SYSCALL1(vga_print_str, 0, const char *)
-DEFN_SYSCALL1(vga_print_dec, 1, const uint32_t)
-DEFN_SYSCALL1(vga_print_hex, 2, const uint32_t)
-
-static void syscall_handler(registers_t *regs);
-
-uint32_t num_syscalls = 3;
+DEFN_SYSCALL0(thread_exit, 0)
+DEFN_SYSCALL1(vga_print_str, 1, const char *)
+DEFN_SYSCALL1(vga_print_dec, 2, const uint32_t)
+DEFN_SYSCALL1(vga_print_hex, 3, const uint32_t)
 
 static uintptr_t syscalls[] = 
 {
+    (uintptr_t)&thread_exit,
     (uintptr_t)&vga_print_str,
     (uintptr_t)&vga_print_dec,
     (uintptr_t)&vga_print_hex
 };
+
+uint32_t num_syscalls = 4;
+
+static void syscall_handler(registers_t *regs);
 
 void syscall_init()
 {
