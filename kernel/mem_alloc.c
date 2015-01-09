@@ -162,7 +162,7 @@ void *alloc(const size_t size, size_t alignment, allocator_t *allocator)
     /* get a block of size "size" or bigger */
     alignment = alignment == 0 ? 1 : alignment; /* must be > 0 for best fit search */
     struct alloc_args args = { alignment, 0 }; /* no address matching */
-    rb_node_t *node = remove_node(&allocator->mem_tree, (void *)requested_size, &args); 
+    rb_node_t *node = remove_rbnode(&allocator->mem_tree, (void *)requested_size, &args); 
 
     if (!node) {
         DBPRINT("- \033\012Expansion\033\017 ");
@@ -188,7 +188,7 @@ void *alloc(const size_t size, size_t alignment, allocator_t *allocator)
             DBPRINT("- Merging left ");
             /* no aligment (disables best fit) and match address */
             struct alloc_args args = { 0, (uintptr_t)block_to_rbnode(left_footer->header) };
-            rb_node_t *left_node = remove_node(&allocator->mem_tree, (void *)get_size(left_footer->header), &args);
+            rb_node_t *left_node = remove_rbnode(&allocator->mem_tree, (void *)get_size(left_footer->header), &args);
 
             if (!left_node) {
                 kprintf(ERROR, "\033\014ERROR: expansion failed, left footer not found\n\033\017");
@@ -203,10 +203,10 @@ void *alloc(const size_t size, size_t alignment, allocator_t *allocator)
             
             /* insert node back into the tree */
             mark_free(left_block);
-            insert_node(&allocator->mem_tree, left_node, (void *)0);
+            insert_rbnode(&allocator->mem_tree, left_node, (void *)0);
         } else {
             mark_free(hole);
-            insert_node(&allocator->mem_tree, block_to_rbnode(hole), (void *)0);
+            insert_rbnode(&allocator->mem_tree, block_to_rbnode(hole), (void *)0);
         }
 
         /* recurse, with a bigger heap this time */
@@ -239,7 +239,7 @@ void *alloc(const size_t size, size_t alignment, allocator_t *allocator)
         set_magic(footer);
 
         mark_free(block);
-        insert_node(&allocator->mem_tree, block_to_rbnode(block), (void *)0);
+        insert_rbnode(&allocator->mem_tree, block_to_rbnode(block), (void *)0);
         //}
         block = new_block;
     }
@@ -265,7 +265,7 @@ void *alloc(const size_t size, size_t alignment, allocator_t *allocator)
         set_magic(footer);
 
         mark_free(next_block);
-        insert_node(&allocator->mem_tree, block_to_rbnode(next_block), (void *)0);
+        insert_rbnode(&allocator->mem_tree, block_to_rbnode(next_block), (void *)0);
     }
     mark_used(block);
     allocator->mem_used += get_size(block);
@@ -301,7 +301,7 @@ void free(void *p, allocator_t *allocator)
         && is_free(neighbour))                  /* node is free */
     {
         struct alloc_args args = { 0, (uintptr_t)block_to_rbnode(neighbour) };
-        if (!remove_node(&allocator->mem_tree, (void *)get_size(neighbour), &args)) {
+        if (!remove_rbnode(&allocator->mem_tree, (void *)get_size(neighbour), &args)) {
             kprintf(ERROR, "\033\014Error: Right neighbour not found in RB-tree!\n\033\017");
             return;
         }
@@ -320,7 +320,7 @@ void free(void *p, allocator_t *allocator)
     {
         neighbour = footer->header;
         struct alloc_args args = { 0, (uintptr_t)block_to_rbnode(neighbour) };
-        if (!remove_node(&allocator->mem_tree, (void *)get_size(neighbour), &args)) {
+        if (!remove_rbnode(&allocator->mem_tree, (void *)get_size(neighbour), &args)) {
             kprintf(ERROR, "\033\014Error: Left neighbour not found in RB-tree!\n\033\017");
             return;
         }
@@ -354,7 +354,7 @@ void free(void *p, allocator_t *allocator)
         }
     }
     
-    if (insert && !insert_node(&allocator->mem_tree, block_to_rbnode(block), (void *)0)) {
+    if (insert && !insert_rbnode(&allocator->mem_tree, block_to_rbnode(block), (void *)0)) {
         kprintf(ERROR, "\033\014Error: can't insert node into RB-tree\n\033\017");
     }
 }
@@ -394,7 +394,7 @@ allocator_t *create_mem_allocator(uintptr_t start, uintptr_t end, size_t min_siz
     set_magic(footer);
     mark_free(hole);
 
-    insert_node(&allocator->mem_tree, block_to_rbnode(hole), (void *)0);
+    insert_rbnode(&allocator->mem_tree, block_to_rbnode(hole), (void *)0);
 
     return allocator;
 }

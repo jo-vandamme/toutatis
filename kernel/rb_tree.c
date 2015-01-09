@@ -14,9 +14,29 @@
                                                                ((uintptr_t)(src)->link[0] & (1 << 0))))
 
 #define get_link(node, i)       ((rb_node_t *)((uintptr_t)(node)->link[(i)] & ~(1 << 0)))
+//#define get_link(node, i)       ((rb_node_t *)(((uintptr_t)(node)->link[(i)] >> 1) << 1))
 #define set_link(node, i, val)  ((node)->link[(i)] = (rb_node_t *)(((uintptr_t)(node)->link[(i)] & (1 << 0)) | \
                                                                    ((uintptr_t)val & ~(1 << 0))))
 int assert_tree(rb_node_t *root);
+
+/*
+inline static rb_node_t *get_link(const rb_node_t *node, int i)
+{
+    if (i == 0) {
+        return (rb_node_t *)((uintptr_t)node->link[i] & ~(1 << 0)); 
+    }
+    return node->link[i];
+}
+
+inline static void set_link(rb_node_t *node, int i, rb_node_t *val)
+{
+    if (i == 0) {
+        node->link[i] = (rb_node_t *)(((uintptr_t)node->link[i] & (1 << 0)) | ((uintptr_t)val & ~(1 << 0)));
+        return;
+    }
+    node->link[i] = val;
+}
+*/
 
 static inline rb_node_t *rotate(rb_node_t *root, const int dir)
 {
@@ -30,7 +50,7 @@ static inline rb_node_t *rotate(rb_node_t *root, const int dir)
     return save;
 }
 
-int insert_node(rb_tree_t *tree, rb_node_t *node, const void *args)
+int insert_rbnode(rb_tree_t *tree, rb_node_t *node, const void *args)
 {
     if (node == NULL) {
         return 0;
@@ -129,7 +149,7 @@ int insert_node(rb_tree_t *tree, rb_node_t *node, const void *args)
  * will be removed.
  */
 
-rb_node_t *remove_node(rb_tree_t *tree, const void *data, const void *args)
+rb_node_t *remove_rbnode(rb_tree_t *tree, const void *data, const void *args)
 {
     //print_tree(tree);
     if (tree->root != NULL) {
@@ -259,6 +279,24 @@ rb_node_t *remove_node(rb_tree_t *tree, const void *data, const void *args)
         return f;
     }
     return NULL;
+}
+
+rb_node_t *lookup_rbnode(const rb_tree_t *tree, void *data, const void *args)
+{
+    rb_node_t *node = tree->root;
+
+    int res = tree->compare(node, data, args);
+    int found = res == 0;
+
+    while (!found && get_link(node, res < 0) != NULL) {
+        node = get_link(node, res < 0);
+
+        int res = tree->compare(node, data, args);
+        if (res == 0) {
+            found = 1;
+        }
+    }
+    return found ? node : NULL;
 }
 
 void init_rbtree(rb_tree_t *tree, compare_t compare, select_dup_t select)

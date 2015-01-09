@@ -27,8 +27,10 @@ typedef struct rb_tree
 
 /* XXX: make a create_rbtree function */
 void init_rbtree(rb_tree_t *tree, compare_t, select_dup_t);
-int insert_node(rb_tree_t *tree, rb_node_t *node, const void *args);
-rb_node_t *remove_node(rb_tree_t *tree, const void *data, const void *args);
+int insert_rbnode(rb_tree_t *tree, rb_node_t *node, const void *args);
+rb_node_t *remove_rbnode(rb_tree_t *tree, const void *data, const void *args);
+
+rb_node_t *lookup_rbnode(const rb_tree_t *tree, void *data, const void *args);
 
 void print_tree(rb_tree_t *tree);
 

@@ -102,7 +102,7 @@ void idt_flush(void *pointer); /* XXX: should be in idt.h */
 void tss_flush(); /* XXX: should be in tss.h */
 void set_kernel_stack(uintptr_t stack); /* XXX: should be in tss.h */
 
-typedef struct
+typedef struct registers
 {
     uint32_t gs, fs, es, ds;
     uint32_t ebp, edi, esi, edx, ecx, ebx, eax;

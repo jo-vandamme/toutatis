@@ -1,7 +1,7 @@
 #include <system.h>
 //#include <logging.h>
 #include <vga.h>
-#include <process.h>
+#include <thread.h>
 #include <syscall.h>
 
 DEFN_SYSCALL0(thread_exit, 0)

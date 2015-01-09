@@ -4,7 +4,7 @@
 #include <pic.h>
 #include <pit.h>
 #include <logging.h>
-#include <process.h>
+#include <scheduler.h>
 
 #define MAX_HANDLERS 50
 
@@ -14,7 +14,7 @@ static uint32_t handlers_heads[IDT_NUM_ENTRIES] = { 0 };
 static void dump_registers(registers_t *regs);
 extern char *exception_messages[];
 
-extern int multitasking;
+extern int scheduling;
 extern tss_entry_t tss_entry;
 
 inline void spin_lock(uint8_t volatile *lock) {
@@ -255,9 +255,9 @@ uintptr_t irq_handler(registers_t *regs)
         return esp; /* ignore spurious IRQs */
     }
 
-    if (multitasking && regs->int_no == 0) {
+    if (scheduling && regs->int_no == 0) {
         /* execute scheduler and overwrite esp */
-        esp = switch_tasks(regs);
+        esp = schedule_tick(regs);
     }
 
     h = get_interrupt_handler(IRQ(regs->int_no));

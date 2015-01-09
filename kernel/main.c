@@ -11,6 +11,8 @@
 #include <vfs.h>
 #include <string.h>
 #include <process.h>
+#include <thread.h>
+#include <scheduler.h>
 #include <syscall.h>
 #include <mem_alloc.h>
 
@@ -42,7 +44,7 @@ void func2(unsigned int off)
 {
     uint16_t *video = (uint16_t *)(0xc00b8000 + off*2);
     uint32_t i;
-    for (i = 0; i < 100000; ++i)
+    for (i = 0; i < 200000; ++i)
         *video = (uint16_t)alph[i++ % sizeof(alph)] | 0x0f00;
 }
 
@@ -50,7 +52,7 @@ void func3(void)
 {
     unsigned int i;
     int a = 0;
-    for (i = 0; i < 1000000; ++i) {
+    for (i = 0; i < 100000; ++i) {
         ++a;
     }
     (void)a;
@@ -134,15 +136,14 @@ void main(uint32_t magic, struct multiboot_info *mbi,
 
     syscall_init();
 
-    multitasking_init();
+    scheduling_init();
 
     keyboard_init();
 
     unsigned int off = 0;
     process_t *proc = create_process("Process 1", 1);
 
-    //create_thread(proc, func3, (void *)0, 1, 0, 1);
-    create_thread(proc, func1, (void *)0, 1, 1, 0);
+    //create_thread(proc, func3, (void *)0, 1, 1, 1);
 
     unsigned int k = 0, i = 0;
     while (mem_used(kheap) < HEAP_MAX_SIZE * 90/100) {

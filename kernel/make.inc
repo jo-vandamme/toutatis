@@ -21,5 +21,7 @@ KOBJS += kernel/bootstrap.o \
          kernel/vfs.o \
          kernel/vnode.o \
          kernel/initrd.o \
+         kernel/thread.o \
          kernel/process.o \
+         kernel/scheduler.o \
          kernel/syscall.o
