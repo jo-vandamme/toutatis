@@ -31,7 +31,7 @@ int kprintf(log_level_t level, const char *fmt, ...)
         com_driver->write((uint8_t *)buf, strlen(buf));
 
         if (level >= INFO) {
-                vga_driver->write((uint8_t *)buf, strlen(buf));
+            vga_driver->write((uint8_t *)buf, strlen(buf));
         }
 
         //spin_unlock(&log_lock);

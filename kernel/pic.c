@@ -45,7 +45,7 @@ void pic_init()
     pic_remap();
     pic_disable();
     irq_gates();
-    sti();
+    irq_enable();
 }
 
 void irq_gates()

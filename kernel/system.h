@@ -14,18 +14,71 @@
 
 #define min(x, y)       ((x) < (y) ? (x) : (y))
 
-inline static void cli()
+#define _DEBUG_
+#ifdef _DEBUG_
+    #define DBPRINT(...)    do { kprintf(DEBUG, __VA_ARGS__); } while (0)
+#else
+    #define DBPRINT(...)    do {} while (0)
+#endif
+
+typedef uint32_t irq_state_t;
+
+/*
+inline static void print1(void)
 {
-    asm volatile ("cli");
+    uint16_t *video = (uint16_t *)(0xc00b8000 + 79*2);
+    *video = (uint16_t)'i' | 0x4f00; // red bg
 }
-inline static void sti()
+
+inline static void print2(void)
 {
-    asm volatile ("sti");
+    uint16_t *video = (uint16_t *)(0xc00b8000 + 79*2);
+    *video = (uint16_t)'i' | 0x2f00; // green bg 
 }
+
+inline static void print_debug(uint8_t c, uint8_t att, uint8_t row, uint8_t col)
+{
+    uint16_t *video = (uint16_t *)(0xc00b8000 + (row * 80 + col)*2);
+    *video = (uint16_t)c | (uint16_t)(att << 8); // cyan bg
+}
+*/
+
+inline static void irq_disable(void)
+{
+    asm volatile("cli");
+    //print1();
+}
+
+inline static void irq_enable(void)
+{
+    asm volatile("sti");
+    //print2();
+}
+
+inline static irq_state_t irq_save(void)
+{
+    irq_state_t state;
+    asm volatile("pushfl; popl %0; cli" : "=rm" (state));
+    //print1();
+    return state;
+}
+
+inline static void irq_restore(irq_state_t state)
+{
+    asm volatile("pushl %0; popfl" : : "rm" (state));
+    /*
+    if (state & (1 << 9)) {
+        print2();
+    } else {    
+        print1();
+    } */
+}
+
 inline static void halt()
 {
-    asm volatile ("hlt");
+    asm volatile("hlt");
 }
+
 inline static void stop()
 {
     while (1) { halt(); }
@@ -33,7 +86,7 @@ inline static void stop()
 
 #define assert(x) { \
     if (!(x)) { \
-        cli();  \
+        irq_disable();  \
         kprintf(CRITICAL, "\033\014Assertion failed: %s, at %s:%d (%s)\n", #x, \
                 __FILE__, __LINE__, __PRETTY_FUNCTION__); \
         stop(); \
@@ -44,10 +97,10 @@ inline static void stop()
 void spin_lock(uint8_t volatile *lock);
 void spin_unlock(uint8_t volatile *lock);
 
-void gdt_flush(void *pointer);
-void idt_flush(void *pointer);
-void tss_flush();
-void set_kernel_stack(uintptr_t stack);
+void gdt_flush(void *pointer); /* XXX: should be in gdt.h */
+void idt_flush(void *pointer); /* XXX: should be in idt.h */
+void tss_flush(); /* XXX: should be in tss.h */
+void set_kernel_stack(uintptr_t stack); /* XXX: should be in tss.h */
 
 typedef struct
 {

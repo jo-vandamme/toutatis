@@ -136,7 +136,7 @@ int vsprintf(char *buf, const char *fmt, va_list args)
 {
         unsigned loc = 0, i, k;
         unsigned long val, flags;
-        char tmp[32] = { 0 };
+        char tmp[1024] = { 0 };
         int width, precision;
 
         if (!buf || !fmt)
@@ -223,8 +223,8 @@ int vsprintf(char *buf, const char *fmt, va_list args)
                                 break;
                         case 's':
                                 val = (unsigned long)va_arg(args, const char *);
-                                strcpy(tmp, (const char *)val);
-                                strcpy(&buf[loc], tmp);
+                                strncpy(tmp, (const char *)val, 1024);
+                                strncpy(&buf[loc], tmp, 1024);
                                 loc += strlen(tmp) - 2;
                                 ++i;
                                 break;

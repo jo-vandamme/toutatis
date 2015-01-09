@@ -13,8 +13,8 @@ typedef struct rb_node
     struct rb_node *link[3];
 } rb_node_t;
 
-typedef int (*compare_t)(rb_node_t *node, void *data, void *args);
-typedef int (*select_dup_t)(rb_node_t *node, void *args);
+typedef int (*compare_t)(const rb_node_t *node, const void *data, const void *args);
+typedef int (*select_dup_t)(const rb_node_t *node, const void *args);
 
 typedef struct rb_tree
 {
@@ -26,9 +26,9 @@ typedef struct rb_tree
 } rb_tree_t;
 
 /* XXX: make a create_rbtree function */
-void init_rbtree(rb_tree_t *tree, compare_t compare, select_dup_t select);
-int insert_node(rb_tree_t *tree, rb_node_t *node, void *args);
-rb_node_t *remove_node(rb_tree_t *tree, void *data, void *args);
+void init_rbtree(rb_tree_t *tree, compare_t, select_dup_t);
+int insert_node(rb_tree_t *tree, rb_node_t *node, const void *args);
+rb_node_t *remove_node(rb_tree_t *tree, const void *data, const void *args);
 
 void print_tree(rb_tree_t *tree);
 

@@ -50,7 +50,7 @@ void arch_finish()
 
 void arch_reset()
 {
-    cli();
+    irq_disable();
 
     /* flush the keyboard buffers (output and command) */
     uint8_t temp;
@@ -99,7 +99,7 @@ void attach_interrupt_handler(uint8_t num, isr_t handler)
     }
     /* attach handler if a slot is available */
     if (n) {
-        cli();
+        irq_state_t irq_state = irq_save();
         n->handler = handler;
         n->num = num;
         n->next = 0;
@@ -111,7 +111,7 @@ void attach_interrupt_handler(uint8_t num, isr_t handler)
             n->index = 1;
             n->prev = 0;
         }
-        sti();
+        irq_restore(irq_state);
     }
 }
 
@@ -134,7 +134,7 @@ void detach_interrupt_handler(uint8_t num, isr_t handler)
     /* go through the list from tail to head and look for handler */
     do {
         if (h->handler == handler) {
-            cli();
+            irq_state_t irq_state = irq_save();
             if (h->prev) {
                 h->prev->next = h->next;
             }
@@ -150,7 +150,7 @@ void detach_interrupt_handler(uint8_t num, isr_t handler)
                 }
             }
             h->handler = 0;
-            sti();
+            irq_restore(irq_state);
             break;
         }
     } while ((h = h->prev) != 0);

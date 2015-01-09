@@ -15,17 +15,17 @@ static uint8_t volatile mem_lock = 0;
 
 static uintptr_t kmalloc_int(uint32_t size, uint32_t alignment, uintptr_t *phys)
 {
-    spin_lock(&mem_lock);
+    //spin_lock(&mem_lock);
+    irq_state_t irq_state = irq_save();
 
+    uintptr_t addr;
     if (kheap != 0) {
-        kprintf(INFO, "\n------------------ alloc(%x) -------------------\n", size);
-        void *addr = alloc(size, alignment, kheap);
+        //kprintf(INFO, "\n------------------ alloc(%x) -------------------\n", size);
+        addr = (uintptr_t)alloc(size, alignment, kheap);
         if (phys != 0) {
             pte_t *page = get_page((uintptr_t)addr, 0, kernel_directory);
             *phys = page->frame * FRAME_SIZE + ((uintptr_t)addr & 0xfff);
         }
-        spin_unlock(&mem_lock);
-        return (uintptr_t)addr;
     }
     else {
         if (alignment != 0 && (placement_address % alignment)) {
@@ -35,12 +35,13 @@ static uintptr_t kmalloc_int(uint32_t size, uint32_t alignment, uintptr_t *phys)
         if (phys) {
             *phys = placement_address - (uintptr_t)&kernel_voffset;
         }
-        uintptr_t tmp = placement_address;
+        addr = placement_address;
         placement_address += size;
-
-        spin_unlock(&mem_lock);
-        return tmp;
     }
+
+    irq_restore(irq_state);
+    //spin_unlock(&mem_lock);
+    return addr;
 }
 
 inline void *kmalloc(uint32_t size)
@@ -65,8 +66,12 @@ inline void *kmalloc_ap(uint32_t size, uintptr_t *phys)
 
 inline void kfree(void *p)
 {
-    spin_lock(&mem_lock);
-    kprintf(INFO, "\n--------------- free(%x) ---------------\n", p);
+    //spin_lock(&mem_lock);
+    irq_state_t irq_state = irq_save();
+
+    //kprintf(INFO, "\n--------------- free(%x) ---------------\n", p);
     free(p, kheap);
-    spin_unlock(&mem_lock);
+
+    irq_restore(irq_state);
+    //spin_unlock(&mem_lock);
 }

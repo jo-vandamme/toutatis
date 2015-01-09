@@ -194,9 +194,9 @@ char *strncpy(char *dst, const char *src, size_t n)
     for (i = 0; src[i] && n > 0; ++i, --n) {
         dst[i] = src[i];
     }
-    for (; n > 0; ++i, --n) {
-        dst[i] = 0;
-    }
+    //for (; n > 0; ++i, --n) {
+    dst[i] = 0;
+    //}
 
     return dst;
 }

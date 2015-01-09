@@ -245,7 +245,7 @@ void paging_finalize()
 
     /* initialize the kernel heap */
     kheap = create_mem_allocator(KHEAP_START, KHEAP_START + KHEAP_INITIAL_SIZE, 
-            HEAP_MIN_SIZE, HEAP_MAX_SIZE, 0, 0, kernel_directory);
+            HEAP_MIN_SIZE, HEAP_MAX_SIZE, 0, 0, current_directory);
     //kheap = create_heap(KHEAP_START, KHEAP_START + KHEAP_INITIAL_SIZE, 
     //        KHEAP_START + HEAP_MAX_SIZE, 0, 0);
 
@@ -349,7 +349,7 @@ page_dir_t *clone_page_directory(page_dir_t *dir)
 
 void page_fault(registers_t *regs)
 {
-    cli();
+    irq_disable();
     uint32_t faulting_address;
     asm volatile("mov %%cr2, %0" : "=r" (faulting_address));
 

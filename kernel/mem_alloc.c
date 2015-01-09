@@ -48,7 +48,7 @@ struct alloc_args
 /* size is the size requested by the user
  * returns the size of the best fitting block
  */
-static inline size_t get_block_size(size_t size)
+static inline size_t get_block_size(const size_t size)
 {
     size_t s = rounded_size(size + USER_PTR_OFFSET + sizeof(alloc_footer_t));
     return s < MIN_BLOCK_SIZE ? MIN_BLOCK_SIZE : s;
@@ -58,14 +58,15 @@ static inline size_t get_block_size(size_t size)
  *          0 if the node is a possible match
  *          1 if node > data
  */
-int compare(rb_node_t *node, void *data, void *args)
+int compare(const rb_node_t *node, const void *data, const void *args)
 {
     /* node is too small */
-    if (node->data < data) return -1;
+    if (node->data < data) {
+        return -1;
+    }
 
     size_t alignment;
     if (args && (alignment = ((struct alloc_args *)args)->alignment) != 0) {
-        //kprintf(INFO, "Testing %p @ %p for %p with align:%x\n", node->data, node, data, alignment);
         /* best fit for required alignment
          * the aligment is with respect to the user pointer */
         size_t offset = alignment - (size_t)rbnode_to_user(node) % alignment;
@@ -75,24 +76,30 @@ int compare(rb_node_t *node, void *data, void *args)
             offset += alignment;
         }
         /* node is too small */
-        //printf("offset = %x candidate = %d\n", offset, (uintptr_t)node->data - offset > (uintptr_t)data);
-        if ((uintptr_t)node->data - offset < (uintptr_t)data) return -1;
+        if ((uintptr_t)node->data - offset < (uintptr_t)data) {
+            return -1;
         /* node is big enough - potential candidate */
-        else return 0; } else { /* node is too big */
-        if (node->data >  data) return 1;
-        /* exact match */
-        if (node->data == data) return 0;
+        } else {
+            return 0; 
+        }
+    } else { /* node is too big */
+        if (node->data > data) {
+            return 1;
+        } else { /* exact match */
+            return 0;
+        }
     }
-    return 1;
 }
 
-int select_dup(rb_node_t *node, void *args)
+int select_dup(const rb_node_t *node, const void *args)
 {
     if (!node) {
         return 0;
     }
-    uintptr_t address = ((struct alloc_args *)args)->address;
-    if (address && (uintptr_t)node != address) {
+
+    uintptr_t address;
+    if (args && (address = ((struct alloc_args *)args)->address) != 0
+        && (uintptr_t)node != address) {
         return 0;
     }
     return 1;
@@ -100,7 +107,6 @@ int select_dup(rb_node_t *node, void *args)
 
 static void expand(uintptr_t new_end_address, allocator_t *allocator)
 {
-    kprintf(INFO, "Expanding\n");
     if (new_end_address <= allocator->end_address) {
         kprintf(ERROR, "\033\017Heap expansion must be bigger than actual size!\n\033\017");
         return;
@@ -126,9 +132,6 @@ static void expand(uintptr_t new_end_address, allocator_t *allocator)
 
 static uintptr_t contract(uintptr_t new_end_address, allocator_t *allocator)
 {
-    kprintf(INFO, "Contraction end:%x start:%x end:%x\n", 
-            new_end_address, allocator->start_address, allocator->end_address);
-
     if (new_end_address >= allocator->end_address) {
         kprintf(ERROR, "\033\014Heap contraction must be smaller than actual size\n\033\017");
         return 0;
@@ -147,17 +150,14 @@ static uintptr_t contract(uintptr_t new_end_address, allocator_t *allocator)
         free_page(get_page(allocator->end_address - FRAME_SIZE, 0, allocator->page_dir));
         allocator->end_address -= FRAME_SIZE;
     }
-    kprintf(INFO, "start:%x end:%x s:%x\n", allocator->start_address, 
-            allocator->end_address, allocator->end_address - allocator->start_address);
 
     return allocator->end_address;
 }
 
-void *alloc(size_t size, size_t alignment, allocator_t *allocator)
+void *alloc(const size_t size, size_t alignment, allocator_t *allocator)
 {
-    /* enough space to store user data and block metadata */
+    /* space to store user data and block metadata */
     size_t requested_size = get_block_size(size);
-    //kprintf(INFO, "size:%x req_size:%x\n", size, requested_size);
 
     /* get a block of size "size" or bigger */
     alignment = alignment == 0 ? 1 : alignment; /* must be > 0 for best fit search */
@@ -165,6 +165,7 @@ void *alloc(size_t size, size_t alignment, allocator_t *allocator)
     rb_node_t *node = remove_node(&allocator->mem_tree, (void *)requested_size, &args); 
 
     if (!node) {
+        DBPRINT("- \033\012Expansion\033\017 ");
         /* expand the heap */
         uintptr_t old_end_address = allocator->end_address;
         expand(allocator->end_address + requested_size, allocator);
@@ -184,6 +185,7 @@ void *alloc(size_t size, size_t alignment, allocator_t *allocator)
             && check_magic(left_footer->header)                   /* node isn't corrupted */
             && is_free(left_footer->header))                      /* node is free */
         {
+            DBPRINT("- Merging left ");
             /* no aligment (disables best fit) and match address */
             struct alloc_args args = { 0, (uintptr_t)block_to_rbnode(left_footer->header) };
             rb_node_t *left_node = remove_node(&allocator->mem_tree, (void *)get_size(left_footer->header), &args);
@@ -226,19 +228,19 @@ void *alloc(size_t size, size_t alignment, allocator_t *allocator)
         footer->header = new_block;
         set_magic(footer);
 
-        assert(offset >= MIN_BLOCK_SIZE); /* XXX */
+        assert(offset >= MIN_BLOCK_SIZE && "offset < MIN_BLOCK_SIZE"); /* XXX */
 
         /* return preceeding block to tree */
-        if (offset >= MIN_BLOCK_SIZE) {
-            set_magic(block);
-            set_size(block, offset);
-            footer = get_footer(block);
-            footer->header = block;
-            set_magic(footer);
+        //if (offset >= MIN_BLOCK_SIZE) {
+        set_magic(block);
+        set_size(block, offset);
+        footer = get_footer(block);
+        footer->header = block;
+        set_magic(footer);
 
-            mark_free(block);
-            insert_node(&allocator->mem_tree, block_to_rbnode(block), (void *)0);
-        }
+        mark_free(block);
+        insert_node(&allocator->mem_tree, block_to_rbnode(block), (void *)0);
+        //}
         block = new_block;
     }
 
@@ -266,6 +268,7 @@ void *alloc(size_t size, size_t alignment, allocator_t *allocator)
         insert_node(&allocator->mem_tree, block_to_rbnode(next_block), (void *)0);
     }
     mark_used(block);
+    allocator->mem_used += get_size(block);
     return (void *)block_to_user(block);
 }
 
@@ -288,6 +291,7 @@ void free(void *p, allocator_t *allocator)
 
     assert(check_magic(block) && "Wrong header magic");
     assert(check_magic(get_footer(block)) && "Wrong footer magic");
+    allocator->mem_used -= get_size(block);
 
     /* right neighbour merge */
     alloc_header_t *neighbour = get_next_block(block);
@@ -329,7 +333,8 @@ void free(void *p, allocator_t *allocator)
 
     uint8_t insert = 1;
     /* if the footer location is the end address, we can contract */
-    if ((uintptr_t)get_footer(block) + sizeof(alloc_footer_t) == allocator->end_address) {
+    if ((uintptr_t)get_footer(block) + sizeof(alloc_footer_t) == allocator->end_address
+        && allocator->end_address - allocator->start_address > allocator->min_size) {
         size_t block_size = get_size(block); /* node may be freed entirely, so save its size */
         uintptr_t old_end = allocator->end_address;
         uintptr_t new_end = contract((uintptr_t)block, allocator);
@@ -372,6 +377,7 @@ allocator_t *create_mem_allocator(uintptr_t start, uintptr_t end, size_t min_siz
     }
 
     init_rbtree(&allocator->mem_tree, compare, select_dup);
+    allocator->mem_used = 0;
     allocator->start_address = start;
     allocator->end_address = end;
     allocator->min_size = min_size;
@@ -391,4 +397,14 @@ allocator_t *create_mem_allocator(uintptr_t start, uintptr_t end, size_t min_siz
     insert_node(&allocator->mem_tree, block_to_rbnode(hole), (void *)0);
 
     return allocator;
+}
+
+size_t mem_used(allocator_t *allocator)
+{
+    return allocator->mem_used;
+}
+
+size_t mem_free(allocator_t *allocator)
+{
+    return allocator->end_address - allocator->start_address - allocator->mem_used;
 }

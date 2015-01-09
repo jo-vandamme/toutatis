@@ -1,38 +1,24 @@
 #include <rb_tree.h>
 #include <logging.h>
+#include <vsprintf.h>
+#include <vga.h>
+#include <string.h>
+#include <system.h>
 
 #define is_red(node)            ((node) && ((uintptr_t)(node)->link[0] & (1 << 0)))
+
 #define paint_red(node)         ((node)->link[0] = (rb_node_t *)((uintptr_t)(node)->link[0] |  (1 << 0)))
 #define paint_black(node)       ((node)->link[0] = (rb_node_t *)((uintptr_t)(node)->link[0] & ~(1 << 0)))
-#define get_link(node, i)       ((rb_node_t *)((uintptr_t)(node)->link[(i)] & ~(1 << 0)))
-#define set_link(node, i, val)  ((node)->link[(i)] = (rb_node_t *)(((uintptr_t)(node)->link[(i)] & (1 << 0)) \
-                                                                           | ((uintptr_t)val & ~(1 << 0))))
-/*
-static inline int is_red(rb_node_t *node)
-{
-    return node && ((uintptr_t)node->link[0] & (1 << 0));
-}
-static inline void paint_red(rb_node_t *node)
-{
-    node->link[0] = (rb_node_t *)((uintptr_t)node->link[0] | (1 << 0));
-}
-static inline void paint_black(rb_node_t *node)
-{
-    node->link[0] = (rb_node_t *)((uintptr_t)node->link[0] & ~(1 << 0));
-}
-static inline rb_node_t *get_link(rb_node_t *node, int i)
-{
-    if (!node) return 0;
-    return (rb_node_t *)((uintptr_t)node->link[i] & ~(1 << 0));
-}
-static inline void set_link(rb_node_t *node, int i, rb_node_t *val)
-{
-    if (!node) return;
-    node->link[i] = (rb_node_t *)(
-            ((uintptr_t)node->link[i] & (1 << 0)) | ((uintptr_t)val & ~(1 << 0)));
-}*/
 
-static inline rb_node_t *rotate(rb_node_t *root, int dir)
+#define copy_color(src, dst)    ((dst)->link[0] = (rb_node_t *)(((uintptr_t)(dst)->link[0] & ~(1 << 0)) | \
+                                                               ((uintptr_t)(src)->link[0] & (1 << 0))))
+
+#define get_link(node, i)       ((rb_node_t *)((uintptr_t)(node)->link[(i)] & ~(1 << 0)))
+#define set_link(node, i, val)  ((node)->link[(i)] = (rb_node_t *)(((uintptr_t)(node)->link[(i)] & (1 << 0)) | \
+                                                                   ((uintptr_t)val & ~(1 << 0))))
+int assert_tree(rb_node_t *root);
+
+static inline rb_node_t *rotate(rb_node_t *root, const int dir)
 {
     rb_node_t *save = get_link(root, !dir);
 
@@ -44,7 +30,7 @@ static inline rb_node_t *rotate(rb_node_t *root, int dir)
     return save;
 }
 
-int insert_node(rb_tree_t *tree, rb_node_t *node, void *args)
+int insert_node(rb_tree_t *tree, rb_node_t *node, const void *args)
 {
     if (node == NULL) {
         return 0;
@@ -105,9 +91,10 @@ int insert_node(rb_tree_t *tree, rb_node_t *node, void *args)
                     set_link(t, dir2, rotate(g, !last));
                 }
             }
+            int res = tree->compare(n, node->data, args);
 
             /* stop working if we inserted a node */
-            if (tree->compare(n, node->data, args) == 0) {
+            if (res == 0) {
                 /* prepend a duplicate if necessary */
                 if (duplicate && n != node) {
                     set_link(node, 2, get_link(n, 2));
@@ -119,7 +106,7 @@ int insert_node(rb_tree_t *tree, rb_node_t *node, void *args)
 
             last = dir;
             //dir = get_size(n) < get_size(node);
-            dir = tree->compare(n, node->data, args) < 0;
+            dir = res < 0;
 
             /* update helpers */
             t = (g != NULL) ? g : t;
@@ -133,7 +120,6 @@ int insert_node(rb_tree_t *tree, rb_node_t *node, void *args)
 
     /* make root black */
     paint_black(tree->root);
-
     return 1;
 }
 
@@ -143,13 +129,14 @@ int insert_node(rb_tree_t *tree, rb_node_t *node, void *args)
  * will be removed.
  */
 
-rb_node_t *remove_node(rb_tree_t *tree, void *data, void *args)
+rb_node_t *remove_node(rb_tree_t *tree, const void *data, const void *args)
 {
+    //print_tree(tree);
     if (tree->root != NULL) {
         rb_node_t head = { 0 };   /* dummy tree root */
         rb_node_t *n, *p, *g;     /* helpers */
         rb_node_t *f = NULL, *fp = NULL; /* found node and parent */
-        int dir = 1, fdir = 1, duplicate = 0;
+        int dir = 1;
 
         /* set up helpers */
         n = &head;
@@ -169,8 +156,7 @@ rb_node_t *remove_node(rb_tree_t *tree, void *data, void *args)
 
             if (res == 0) {
                 /* save found node and keep going; we'll do the removal at the end */
-                f = n, fp = p, fdir = last;
-                duplicate = get_link(n, 2) != NULL;
+                f = n, fp = p;
             }
 
             /* push the red node down with rotations and color flips */
@@ -182,7 +168,7 @@ rb_node_t *remove_node(rb_tree_t *tree, void *data, void *args)
                     /* if the node has been found, its parent may have changed
                      * due to the last rotation */
                     if (f == n) {
-                        fp = p, fdir = dir;
+                        fp = p;
                     }
                 }
                 else {
@@ -215,7 +201,7 @@ rb_node_t *remove_node(rb_tree_t *tree, void *data, void *args)
                             /* the parent p of n hasn't changed but its grandparent g has, 
                              * so if f (found node) == p, update its parent fp */
                             if (f == p) {
-                                fp = get_link(g, dir2), fdir = last;
+                                fp = get_link(g, dir2);
                             }
                         }
                     }
@@ -223,7 +209,7 @@ rb_node_t *remove_node(rb_tree_t *tree, void *data, void *args)
             }
         }
         /* remove a duplicate (matching address if necessary) */
-        if (duplicate) {
+        if (f != NULL && get_link(f, 2) != NULL) {
             /* try to find a valid duplicate */
             rb_node_t *tmp = get_link(f, 2);
             rb_node_t *tmp_prev = f;
@@ -234,9 +220,11 @@ rb_node_t *remove_node(rb_tree_t *tree, void *data, void *args)
             /* if no valid duplicate was found (tmp = 0), test the first node */
             if (tmp == NULL) {
                 if (tree->select_dup(f, args)) {
-                    set_link(fp, fdir, get_link(f, 2));
-                    set_link(get_link(fp, fdir), 0, get_link(f, 0));
-                    set_link(get_link(fp, fdir), 1, get_link(f, 1));
+                    tmp = get_link(f, 2);
+                    set_link(tmp, 0, get_link(f, 0));
+                    set_link(tmp, 1, get_link(f, 1));
+                    set_link(fp, get_link(fp, 1) == f, tmp);
+                    copy_color(f, tmp);
                     --tree->num_dup;
                 } else {
                     /* nothing found */
@@ -259,12 +247,8 @@ rb_node_t *remove_node(rb_tree_t *tree, void *data, void *args)
             if (n != f) {
                 set_link(n, 0, get_link(f, 0));
                 set_link(n, 1, get_link(f, 1));
-                set_link(fp, fdir, n);
-                if (is_red(f)) {
-                    paint_red(n);
-                } else {
-                    paint_black(n);
-                }
+                set_link(fp, get_link(fp, 1) == f, n);
+                copy_color(f, n);
             }
         }
         /* update root and make it black */
@@ -284,8 +268,7 @@ void init_rbtree(rb_tree_t *tree, compare_t compare, select_dup_t select)
     tree->select_dup = select;
 }
 
-/*
-#define HEIGHT 20
+#define HEIGHT 30
 #define WIDTH  255
 
 static int height(rb_node_t *node)
@@ -307,7 +290,7 @@ static int height(rb_node_t *node)
 static int print_tree_(rb_node_t *node, int is_left, int offset, int depth, char s[HEIGHT][WIDTH])
 {
     char b[20];
-    int width = 12;
+    int width = 15;
     int i;
 
     if (!node) return 0;
@@ -318,7 +301,7 @@ static int print_tree_(rb_node_t *node, int is_left, int offset, int depth, char
         ++dup;
         tmp = get_link(tmp, 2);
     }
-    sprintf(b, "(%5p-%02d-%c)", node->data, dup, is_red(node) ? 'R' : 'B');
+    sprintf(b, "(0x%06x-%02d-%c)", node->data, dup, is_red(node) ? 'R' : 'B');
 
     int left  = print_tree_(get_link(node, 0), 1, offset,                depth + 1, s);
     int right = print_tree_(get_link(node, 1), 0, offset + left + width, depth + 1, s);
@@ -350,22 +333,64 @@ void print_tree(rb_tree_t *tree)
 {
     char s[HEIGHT][WIDTH];
     int i, j;
-    for (i = 0; i < HEIGHT; ++i) {
-        for (j = 0; j < WIDTH; ++j) {
+    int h = height(tree->root);
+
+    assert(h * 2 - 1 < HEIGHT);
+    for (i = 0; i < h * 2 - 1; ++i) {
+        for (j = 0; j < WIDTH-1; ++j) {
             s[i][j] = ' ';
         }
         s[i][j] = '\0';
     }
     print_tree_(tree->root, 0, 0, 0, s);
 
-    int h = height(tree->root);
     for (i = 0; i < h * 2 - 1; ++i) {
-        j = WIDTH;
+        j = WIDTH-1;
         while (s[i][--j] == ' ') s[i][j] = '\0';
-        printf("%s\n", s[i]);
+        DBPRINT("%s\n", s[i]);
     }
 }
-*/
-void print_tree(rb_tree_t *tree)
+
+int assert_tree(rb_node_t *root)
 {
+    int lh, rh;
+
+    if (root == NULL) {
+        return 1;
+    } else {
+        rb_node_t *ln = get_link(root, 0);
+        rb_node_t *rn = get_link(root, 1);
+
+        /* consecutive red links */
+        if (is_red(root) && (is_red(ln) || is_red(rn))) {
+            DBPRINT("\033\014Red violation\n");
+            for (;;) ;
+            return 0;
+        }
+
+        lh = assert_tree(ln);
+        rh = assert_tree(rn);
+        
+        /* invalid binary search tree */
+        if ((ln != NULL && ln->data >= root->data)
+         || (rn != NULL && rn->data <= root->data)) {
+            DBPRINT("\033\014Binary tree violation\n");
+            for (;;) ;
+            return 0;
+        }
+
+        /* black height mismatch */
+        if (lh != 0 && rh != 0 && lh != rh) {
+            DBPRINT("\033\014Black violation\n");
+            for (;;) ;
+            return 0;
+        }
+
+        /* only count black links */
+        if (lh != 0 && rh != 0) {
+            return is_red(root) ? lh : lh + 1;
+        } else {
+            return 0;
+        }
+    }
 }

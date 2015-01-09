@@ -17,11 +17,15 @@ typedef struct allocator
     struct page_dir *page_dir; 
     uint8_t supervisor;
     uint8_t readonly;
+    size_t mem_used;
 } allocator_t;
 
 allocator_t *create_mem_allocator(uintptr_t start, uintptr_t end, size_t min, size_t max, 
                                   uint8_t supervisor, uint8_t readonly, struct page_dir *dir);
-void *alloc(size_t size, size_t alignment, allocator_t *allocator);
+void *alloc(const size_t size, size_t alignment, allocator_t *allocator);
 void free(void *p, allocator_t *allocator);
+
+size_t mem_used(allocator_t *allocator);
+size_t mem_free(allocator_t *allocator);
 
 #endif 
