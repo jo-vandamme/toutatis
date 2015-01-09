@@ -7,7 +7,6 @@
 
 int scheduling = 0;
 thread_t *current_thread = 0;
-thread_t *thread_list = 0;
 
 extern page_dir_t *current_directory;
 
@@ -20,15 +19,14 @@ void schedule_thread(thread_t *thread)
 
     thread->next = thread->prev = 0;
 
-    if (!thread_list) {
-        thread_list = thread;
+    if (!current_thread) {
+        current_thread = thread;
+        current_thread->next = current_thread->prev = thread;
     } else {
-        thread_t *tmp = thread_list;
-        while (tmp->next) {
-            tmp = tmp->next;
-        }
-        tmp->next = thread;
-        thread->prev = tmp;
+        thread->prev = current_thread->prev;
+        thread->next = current_thread;
+        current_thread->prev->next = thread;
+        current_thread->prev = thread;
     }
 
     irq_restore(irq_state);
@@ -58,16 +56,10 @@ static void switch_next(void)
 
 inline static thread_t *next_ready_thread(void)
 {
-    /* there should be at least one thread (kernel thread) */
-    if (!current_thread) {
-        return 0;
-    }
-
-    if (current_thread->next) {
+    if (current_thread) {
         return current_thread->next;
-    } else { 
-        return thread_list;
     }
+    return 0;
 }
 
 uintptr_t schedule_tick(registers_t *regs)

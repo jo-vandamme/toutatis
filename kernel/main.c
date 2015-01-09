@@ -44,7 +44,7 @@ void func2(unsigned int off)
 {
     uint16_t *video = (uint16_t *)(0xc00b8000 + off*2);
     uint32_t i;
-    for (i = 0; i < 200000; ++i)
+    for (i = 0; i < 100000; ++i)
         *video = (uint16_t)alph[i++ % sizeof(alph)] | 0x0f00;
 }
 

@@ -26,19 +26,19 @@ static void create_kernel_thread(void)
 {
     irq_state_t irq_state = irq_save();
 
-    current_thread = (thread_t *)kmalloc(sizeof(thread_t));
-    if (!current_thread) {
+    thread_t *thread = (thread_t *)kmalloc(sizeof(thread_t));
+    if (!thread) {
         return;
     }
-    memset(current_thread, 0, sizeof(thread_t));
+    memset(thread, 0, sizeof(thread_t));
 
-    current_thread->id = request_thread_id();
-    current_thread->process = 0;
-    current_thread->state = TASK_READY;
+    thread->id = request_thread_id();
+    thread->process = 0;
+    thread->state = TASK_READY;
 
     ++num_threads;
 
-    schedule_thread(current_thread);
+    schedule_thread(thread);
 
     irq_restore(irq_state);
 }
