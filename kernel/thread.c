@@ -7,7 +7,7 @@
 #include <thread.h>
 
 #define STACK_SIZE 0x2000
-#define stack_top(s) ((s) + STACK_SIZE - 0x100)
+#define stack_top(s) ((s) + STACK_SIZE)
 
 uint32_t num_threads = 0;
 extern thread_t *current_thread;
@@ -55,34 +55,42 @@ uint32_t create_thread(process_t *process, entry_t entry, void *args, uint32_t p
     if (!thread) {
         return 0;
     }
-    memset(thread, 0, sizeof(thread));
+    memset(thread, 0, sizeof(thread_t));
 
     /* setup the stack(s) */
     thread->kstack = (uintptr_t)kmalloc(STACK_SIZE);
+    /*
+    if (user) {
+        uint32_t *stack = (uint32_t *)thread->kstack;
+        (void)stack;
+        DBPRINT("+++ thread->kstack: %x\n", thread->kstack);
+        for (int i = -15; i < 15; ++i) {
+            DBPRINT("%x -> stack[%d] = %x\n", thread->kstack + i, i, stack[i]);
+        }
+    }
+    */
+    
     if (!thread->kstack) {
         return 0;
     }
-    memset((void *)thread->kstack, 0, STACK_SIZE);
     if (user) {
         thread->ustack = (uintptr_t)kmalloc(STACK_SIZE);
         if (!thread->ustack) {
             return 0;
         }
-        memset((void *)thread->ustack, 0, STACK_SIZE);
-    } else {
-        thread->ustack = 0;
     }
 
     uint32_t *kstack = (uint32_t *)stack_top(thread->kstack);
-    uint32_t *ustack = (uint32_t *)stack_top(thread->ustack);
-
     uint32_t data_segment = user ? 0x20+3 : 0x10;
     uint32_t code_segment = user ? 0x18+3 : 0x08;
+
     /* bit 2 always set - bit 9 = interruption flag (IF) - bits 12/13 = privilege level 
      * bit 17 = virtua-8086 mode (VM) */
     uint32_t eflags = (user ? 0x3202 : 0x0202) | (vm86 ? 1 << 17 : 0 << 17);
 
     if (user) {
+        uint32_t *ustack = (uint32_t *)stack_top(thread->ustack);
+
         PUSH(ustack, (uintptr_t)args);      /* args */
         PUSH(ustack, 0xdeadcaca);           /* return address - thread should be finished
                                              * with a system call, not by jumping to this address */
@@ -139,10 +147,19 @@ void destroy_thread(thread_t *thread)
 
     DBPRINT("\033\012%s Freeing kstack %x ", thread->ustack ? "User" : "Kernel", thread->kstack);
     kfree((void *)thread->kstack);
-    if (thread->ustack) {
+
+    if (thread->ustack != 0) {
+        /*uint32_t *stack = (uint32_t *)thread->kstack;
+        (void)stack;
+        DBPRINT("--- thread->kstack: %x\n", thread->kstack);
+        for (int i = -15; i < 15; ++i) {
+            DBPRINT("%x -> stack[%d] = %x\n", thread->kstack + i, i, stack[i]);
+        } */
+    
         DBPRINT("- Freeing ustack %x ", thread->ustack);
         kfree((void *)thread->ustack);
     }
+
     DBPRINT("- Freeing thread %x\033\017\n", thread);
     kfree(thread);
 }
@@ -153,6 +170,7 @@ void thread_exit(void)
     current_thread->state = TASK_FINISHED;
     irq_enable();
 
+    /* this call also enables IRQs */
     switch_next();
 }
 

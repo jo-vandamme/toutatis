@@ -23,7 +23,7 @@ void *memcpy(void *dst, const void *src, size_t n)
     return dst;
 }
 
-void *memset(void *ptr, int value, size_t n)
+inline void *memset(void *ptr, char value, size_t n)
 {
     __asm__ volatile ("cld; rep stosb"
                       : "+c" (n), "+D" (ptr)

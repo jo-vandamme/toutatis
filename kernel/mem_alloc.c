@@ -3,9 +3,9 @@
 #include <logging.h>
 #include <mem_alloc.h>
 
-#define MAGIC                       0xa1b2c3d4 /* last bit is ignored */
+#define MAGIC                       (uint32_t)0xa1b2c3d4 /* last bit is ignored */
 #define set_magic(block)            ((block)->magic = ((MAGIC & ~(1 << 0)) | ((block)->magic & (1 << 0))))
-#define check_magic(block)          (((block)->magic &  ~(1 << 0)) == (MAGIC & ~(1 << 0)))
+#define check_magic(block)          (((block)->magic & ~(1 << 0)) == (MAGIC & ~(1 << 0)))
 #define is_free(block)              ((block)->magic &   (1 << 0)) /* last bit used for free/used status of block */
 #define mark_free(block)            ((block)->magic |=  (1 << 0))
 #define mark_used(block)            ((block)->magic &= ~(1 << 0))
@@ -280,6 +280,9 @@ void free(void *p, allocator_t *allocator)
     /* get node from user pointer */
     alloc_header_t *block = user_to_block(p);
 
+    DBPRINT("magic: %x\n", block->magic);
+    assert(check_magic(block) && "Wrong header magic");
+
     /* don't free a node already freed */
     if (is_free(block)) {
         kprintf(ERROR, "\033\014Error: node already free\n\033\017");
@@ -288,7 +291,6 @@ void free(void *p, allocator_t *allocator)
         mark_free(block);
     }
 
-    assert(check_magic(block) && "Wrong header magic");
     assert(check_magic(get_footer(block)) && "Wrong footer magic");
     allocator->mem_used -= get_size(block);
 

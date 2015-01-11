@@ -236,6 +236,8 @@ void paging_finalize()
     kheap = create_mem_allocator(KHEAP_START, KHEAP_START + KHEAP_INITIAL_SIZE, 
             HEAP_MIN_SIZE, HEAP_MAX_SIZE, 0, 0, current_directory);
 
+    //switch_page_directory(clone_page_directory(kernel_directory));
+
     kprintf(INFO, "[paging] %u frames (%uMB) - %u used (%uKB) - %u free (%uMB)\n",
         nframes, nframes * FRAME_SIZE / (1024 * 1024),
         used_frames, used_frames * FRAME_SIZE / 1024,

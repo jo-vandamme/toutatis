@@ -67,7 +67,6 @@ inline static thread_t *next_ready_thread(void)
         return 0;
     }
     thread_t *thread = current_thread->next;
-    return thread;
     while (thread && thread->state == TASK_SLEEP) {
         thread = thread->next;
     }
@@ -90,17 +89,21 @@ uintptr_t schedule_tick(registers_t *regs)
 
     thread_t *next = next_ready_thread();
 
+    /*uintptr_t esp_;
+    asm volatile("mov %%esp, %0" : "=r" (esp_));
+    DBPRINT("current esp = %x\n", esp_);
+    */
+
     //DBPRINT("- cur:%x next:%x ", current_thread, next);
 
     if (next && next != current_thread) {
 
         /* register current esp and terminate task if needed */
-        current_thread->esp = old_esp;
         if (current_thread->state == TASK_FINISHED) {
-            //DBPRINT("- removing ");
             unschedule_thread(current_thread);
             destroy_thread(current_thread);
         } else {
+            current_thread->esp = old_esp;
             current_thread->state = TASK_READY;
             current_thread->runtime += new_cycles_count - old_cycles_count;
         }
@@ -111,6 +114,8 @@ uintptr_t schedule_tick(registers_t *regs)
         next->state = TASK_RUNNING;
         current_thread = next;
         if (current_directory != current_thread->page_dir) {
+            DBPRINT("page dir: %x -> %x nthreads:%d\n", 
+                    current_directory, current_thread->page_dir, get_num_threads());
             switch_page_directory(current_thread->page_dir);
         }
 

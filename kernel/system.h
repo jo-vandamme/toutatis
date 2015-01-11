@@ -6,16 +6,15 @@
 
 #define asm __asm__
 #define volatile __volatile__
-//#define asm __asm__ __volatile__
 
 #define IRQ(x)          ((x) + 0x20)
 #define SYSCALL_VECTOR  0x80
-#define TIMER_FREQ      500
+#define TIMER_FREQ      1000
 #define IRQ_TIMER       0
 
 #define min(x, y)       ((x) < (y) ? (x) : (y))
 
-#define _DEBUG_
+//#define _DEBUG_
 #ifdef _DEBUG_
     #define DBPRINT(...)    do { kprintf(INFO, __VA_ARGS__); } while (0)
 #else
