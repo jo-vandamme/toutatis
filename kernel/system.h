@@ -15,7 +15,7 @@
 
 #define min(x, y)       ((x) < (y) ? (x) : (y))
 
-#define _DEBUG_
+//#define _DEBUG_
 #ifdef _DEBUG_
     #define DBPRINT(...)    do { kprintf(INFO, __VA_ARGS__); } while (0)
 #else

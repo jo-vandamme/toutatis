@@ -93,6 +93,7 @@ uintptr_t schedule_tick(registers_t *regs)
     DBPRINT("- cur:%x next:%x ", current_thread, next);
 
     if (next && next != current_thread) {
+
         /* register current esp and terminate task if needed */
         current_thread->esp = old_esp;
         if (current_thread->state == TASK_FINISHED) {
@@ -103,14 +104,16 @@ uintptr_t schedule_tick(registers_t *regs)
             current_thread->state = TASK_READY;
             current_thread->runtime += new_cycles_count - old_cycles_count;
         }
+
         /* switch to next task */
-        set_kernel_stack((uintptr_t)next->esp);
         esp = next->esp;
+        set_kernel_stack(esp);
         next->state = TASK_RUNNING;
         current_thread = next;
         if (current_directory != current_thread->page_dir) {
             switch_page_directory(current_thread->page_dir);
         }
+
     } else {
         /* keep executing the same stuff */
         esp = old_esp;

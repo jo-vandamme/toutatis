@@ -38,11 +38,8 @@ void func1(int off)
         if (i % 5000 == 0) 
             syscall_vga_print_str("-");
     }
-    syscall_vga_print_str("+");
-
     syscall_vga_print_str("exit\n");
     syscall_thread_exit();
-    //for (;;) ;//syscall_vga_print_str(".");
 }
 
 void func2(unsigned int off)
@@ -153,7 +150,7 @@ void main(uint32_t magic, struct multiboot_info *mbi,
             
     unsigned int k = 0;
     unsigned int off = 0;
-    for (k = 0; k < 20; ++k) {
+    for (k = 0; k < 10; ++k) {
         if (!create_thread(procs[k % 3], func2, (void *)(off + 80*2), 1, 0, 0)) {
             kprintf(INFO, "Oups\n");
             stop();
@@ -175,10 +172,10 @@ void main(uint32_t magic, struct multiboot_info *mbi,
         uint16_t *video = (uint16_t *)(0xc00b8000 + 80);
         *video = (uint16_t)alph[i++ % sizeof(alph)] | 0x0f00;
         
-        if (k % 1000 == 0) {
-            //set_pos(0, 23);
+        if (k % 100 == 0) {
+            set_pos(0, 23);
             //vga_print_dec(k);
-            kprintf(INFO, "mem used: %x num threads:%d   \n", mem_used(kheap), get_num_threads());
+            kprintf(INFO, "mem used: %6x num threads:%3d   \n", mem_used(kheap), get_num_threads());
         }
         /*
         if (!create_thread(proc1, func2, (void *)(off + 80*2), 1, 0, 0)) {
