@@ -41,7 +41,7 @@ void unschedule_thread(struct thread *thread)
     if (!thread || thread == kernel_thread) {
         return;
     }
-    DBPRINT(" unsched  ");
+    //DBPRINT(" unsched  ");
     irq_state_t irq_state = irq_save();
 
     if (thread->prev) {
@@ -76,7 +76,7 @@ inline static thread_t *next_ready_thread(void)
 
 uintptr_t schedule_tick(registers_t *regs)
 {
-    DBPRINT("switch ");
+    //DBPRINT("switch ");
     irq_state_t irq_state = irq_save();
 
     static uint64_t old_cycles_count = 0;
@@ -90,14 +90,14 @@ uintptr_t schedule_tick(registers_t *regs)
 
     thread_t *next = next_ready_thread();
 
-    DBPRINT("- cur:%x next:%x ", current_thread, next);
+    //DBPRINT("- cur:%x next:%x ", current_thread, next);
 
     if (next && next != current_thread) {
 
         /* register current esp and terminate task if needed */
         current_thread->esp = old_esp;
         if (current_thread->state == TASK_FINISHED) {
-            DBPRINT("- removing ");
+            //DBPRINT("- removing ");
             unschedule_thread(current_thread);
             destroy_thread(current_thread);
         } else {
@@ -118,7 +118,7 @@ uintptr_t schedule_tick(registers_t *regs)
         /* keep executing the same stuff */
         esp = old_esp;
     }
-    DBPRINT("- esp: %x->%x\n", old_esp, esp);
+    //DBPRINT("- esp: %x->%x\n", old_esp, esp);
 
     old_cycles_count = get_cycles_count();
 

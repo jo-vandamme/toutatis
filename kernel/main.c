@@ -155,12 +155,10 @@ void main(uint32_t magic, struct multiboot_info *mbi,
             kprintf(INFO, "Oups\n");
             stop();
         }
-        /*
         if (!create_thread(procs[k % 3], func1, (void *)k, 1, 1, 0)) {
             kprintf(INFO, "Oups\n");
             stop();
         }
-        */
         off += 2;
     }
 

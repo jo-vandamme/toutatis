@@ -7,7 +7,7 @@
 #include <thread.h>
 
 #define STACK_SIZE 0x2000
-#define stack_top(s) ((s) + STACK_SIZE - 0x000)
+#define stack_top(s) ((s) + STACK_SIZE - 0x100)
 
 uint32_t num_threads = 0;
 extern thread_t *current_thread;
@@ -53,7 +53,6 @@ uint32_t create_thread(process_t *process, entry_t entry, void *args, uint32_t p
     /* create thread */
     thread_t *thread = (thread_t *)kmalloc(sizeof(thread_t));
     if (!thread) {
-        DBPRINT("- !thread");
         return 0;
     }
     memset(thread, 0, sizeof(thread));
@@ -61,15 +60,15 @@ uint32_t create_thread(process_t *process, entry_t entry, void *args, uint32_t p
     /* setup the stack(s) */
     thread->kstack = (uintptr_t)kmalloc(STACK_SIZE);
     if (!thread->kstack) {
-        DBPRINT("- !kstack");
         return 0;
     }
+    memset((void *)thread->kstack, 0, STACK_SIZE);
     if (user) {
         thread->ustack = (uintptr_t)kmalloc(STACK_SIZE);
         if (!thread->ustack) {
-            DBPRINT("- !ustack");
             return 0;
         }
+        memset((void *)thread->ustack, 0, STACK_SIZE);
     } else {
         thread->ustack = 0;
     }
@@ -138,10 +137,13 @@ void destroy_thread(thread_t *thread)
     }
     --num_threads;
 
+    DBPRINT("\033\012%s Freeing kstack %x ", thread->ustack ? "User" : "Kernel", thread->kstack);
     kfree((void *)thread->kstack);
     if (thread->ustack) {
+        DBPRINT("- Freeing ustack %x ", thread->ustack);
         kfree((void *)thread->ustack);
     }
+    DBPRINT("- Freeing thread %x\033\017\n", thread);
     kfree(thread);
 }
 
