@@ -8,6 +8,7 @@ void schedule_thread(struct thread *thread);
 void unschedule_thread(struct thread *thread);
 
 uintptr_t schedule_tick(struct registers *regs);
+void switch_next(void);
 
 void scheduling_init(void);
 void scheduling_finish(void);

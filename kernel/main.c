@@ -31,21 +31,25 @@ size_t stack_size;
 
 unsigned char alph[] = "abcdefghijklmnopqrstuvwxyz";
 
-void func1(unsigned int off)
+void func1(int off)
 {
-    syscall_vga_print_str(".");
-    for (unsigned i = 0; i < 1000000; ++i) {
-        if (i % 2000 == 0) syscall_vga_print_str(".");
+    syscall_vga_print_hex(off);
+    for (unsigned i = 0; i < 2000000; ++i) {
+        if (i % 5000 == 0) 
+            syscall_vga_print_str("-");
     }
+    syscall_vga_print_str("+");
+
+    syscall_vga_print_str("exit\n");
     syscall_thread_exit();
+    //for (;;) ;//syscall_vga_print_str(".");
 }
 
 void func2(unsigned int off)
 {
     uint16_t *video = (uint16_t *)(0xc00b8000 + off*2);
     uint32_t i = 0;
-    //for (i = 0; i < 100000; ++i)
-    for (;;)
+    for (i = 0; i < 1000000; ++i)
         *video = (uint16_t)alph[i++ % sizeof(alph)] | 0x0f00;
 }
 
@@ -146,20 +150,24 @@ void main(uint32_t magic, struct multiboot_info *mbi,
     process_t *proc3 = create_process("Process 3", 1);
 
     process_t *procs[] = { proc1, proc2, proc3 };
-
+            
     unsigned int k = 0;
     unsigned int off = 0;
-    for (k = 0; k < 50; ++k) {
-        if (!create_thread(procs[k % 3],
-                           func2, (void *)(off + 80*2), 
-                           1, 0, 0)) {
+    for (k = 0; k < 20; ++k) {
+        if (!create_thread(procs[k % 3], func2, (void *)(off + 80*2), 1, 0, 0)) {
             kprintf(INFO, "Oups\n");
             stop();
         }
+        /*
+        if (!create_thread(procs[k % 3], func1, (void *)k, 1, 1, 0)) {
+            kprintf(INFO, "Oups\n");
+            stop();
+        }
+        */
         off += 2;
     }
 
-    //create_thread(proc, func3, (void *)0, 1, 1, 1);
+    //create_thread(proc1, func3, (void *)0, 1, 1, 1);
 
     k = 0;
     unsigned int i = 0;
@@ -167,10 +175,12 @@ void main(uint32_t magic, struct multiboot_info *mbi,
         uint16_t *video = (uint16_t *)(0xc00b8000 + 80);
         *video = (uint16_t)alph[i++ % sizeof(alph)] | 0x0f00;
         
-        /*
         if (k % 1000 == 0) {
-            kprintf(INFO, "mem used: %x num threads:%d\n", mem_used(kheap), get_num_threads());
+            //set_pos(0, 23);
+            //vga_print_dec(k);
+            kprintf(INFO, "mem used: %x num threads:%d   \n", mem_used(kheap), get_num_threads());
         }
+        /*
         if (!create_thread(proc1, func2, (void *)(off + 80*2), 1, 0, 0)) {
             kprintf(INFO, "Oups\n");
             break;
@@ -178,8 +188,11 @@ void main(uint32_t magic, struct multiboot_info *mbi,
         off += 2;
         off %= (60 * (25-2));
         */
-        if (keyboard_lastchar() == 'u') {
-            create_thread(proc1, func1, (void *)0, 1, 1, 0);
+        char c = keyboard_lastchar();
+        if (c == 'u') {
+            create_thread(proc1, func1, (void *)5, 1, 1, 0);
+        } else if (c == 'k') {
+            create_thread(proc1, func2, (void *)5, 1, 0, 0);
         }
         ++k;
     }

@@ -89,7 +89,6 @@ uint32_t create_thread(process_t *process, entry_t entry, void *args, uint32_t p
                                              * with a system call, not by jumping to this address */
         PUSH(kstack, 0x23);                 /* ss */
         PUSH(kstack, stack_top(thread->ustack)); /* esp */
-
     } else {
         PUSH(kstack, (uintptr_t)args);      /* args */
         PUSH(kstack, (uintptr_t)&thread_exit); /* return address */
@@ -122,9 +121,9 @@ uint32_t create_thread(process_t *process, entry_t entry, void *args, uint32_t p
 
     irq_state_t irq_state = irq_save();
 
-    if (user) {
+    //if (user) {
         set_kernel_stack((uintptr_t)kstack);
-    }
+    //}
     ++num_threads;
 
     /* register this thread */
@@ -151,11 +150,18 @@ void destroy_thread(thread_t *thread)
 
 void thread_exit(void)
 {
+    DBPRINT("thread_exit ");
+    //irq_state_t irq_state = irq_save();
     irq_disable();
     current_thread->state = TASK_FINISHED;
+    //irq_restore(irq_state);
     irq_enable();
 
+    //DBPRINT("calling switch\n");
+    switch_next();
+
     /* the thread will be removed during the next task switch */
-    for (;;) ;
+    for (;;) 
+        halt();
 }
 

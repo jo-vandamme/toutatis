@@ -208,16 +208,14 @@ void paging_finalize()
      * increase placement_address.
      */
     uint32_t virt = (uintptr_t)&kernel_voffset;
-    for (; virt < 0xfffff000; virt += FRAME_SIZE)
-    {
+    for (; virt < 0xfffff000; virt += FRAME_SIZE) {
         get_page(virt, 1, kernel_directory);
     }
 
     /* map kernel bitmap, and allocated structures (above 3GB) to low memory */
     phys = 0;
     virt = (uintptr_t)&kernel_voffset;
-    while (virt < placement_address)
-    {
+    while (virt < placement_address) {
         map_page(get_page(virt, 1, kernel_directory), 0, 0, phys);
         phys += FRAME_SIZE;
         virt += FRAME_SIZE;
@@ -230,8 +228,7 @@ void paging_finalize()
     switch_page_directory(kernel_directory);
 
     /* allocate pages for the kernel heap */
-    for (virt = KHEAP_START; virt < KHEAP_START + KHEAP_INITIAL_SIZE; virt += FRAME_SIZE)
-    {
+    for (virt = KHEAP_START; virt < KHEAP_START + KHEAP_INITIAL_SIZE; virt += FRAME_SIZE) {
         alloc_page(get_page(virt, 1, kernel_directory), 0, 1);
     }
     
@@ -324,7 +321,7 @@ page_dir_t *clone_page_directory(page_dir_t *dir)
         }
         else {
             uintptr_t phys;
-            //kprintf(INFO, "cloning table dir->tables[%x]\n", i);
+            kprintf(INFO, "cloning table dir->tables[%x]\n", i);
             clone->tables[i] = clone_page_table(dir->tables[i], &phys);
             //clone->entries[i].present = 1;
             //clone->entries[i].read_write = 1;

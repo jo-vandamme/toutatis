@@ -41,6 +41,7 @@ void unschedule_thread(struct thread *thread)
     if (!thread || thread == kernel_thread) {
         return;
     }
+    DBPRINT(" unsched  ");
     irq_state_t irq_state = irq_save();
 
     if (thread->prev) {
@@ -54,15 +55,20 @@ void unschedule_thread(struct thread *thread)
 }
 
 
-static void switch_next(void)
+void switch_next(void)
 {
+    irq_enable();
     interrupt(IRQ(0));
 }
 
 inline static thread_t *next_ready_thread(void)
 {
+    if (!current_thread) {
+        return 0;
+    }
     thread_t *thread = current_thread->next;
-    while (thread && thread->state != TASK_READY) {
+    return thread;
+    while (thread && thread->state == TASK_SLEEP) {
         thread = thread->next;
     }
     return thread;
@@ -70,6 +76,9 @@ inline static thread_t *next_ready_thread(void)
 
 uintptr_t schedule_tick(registers_t *regs)
 {
+    DBPRINT("switch ");
+    irq_state_t irq_state = irq_save();
+
     static uint64_t old_cycles_count = 0;
     uint64_t new_cycles_count;
     uintptr_t esp, old_esp = (uintptr_t)regs;
@@ -81,10 +90,13 @@ uintptr_t schedule_tick(registers_t *regs)
 
     thread_t *next = next_ready_thread();
 
-    if (next != current_thread) {
+    DBPRINT("- cur:%x next:%x ", current_thread, next);
+
+    if (next && next != current_thread) {
         /* register current esp and terminate task if needed */
         current_thread->esp = old_esp;
         if (current_thread->state == TASK_FINISHED) {
+            DBPRINT("- removing ");
             unschedule_thread(current_thread);
             destroy_thread(current_thread);
         } else {
@@ -92,6 +104,7 @@ uintptr_t schedule_tick(registers_t *regs)
             current_thread->runtime += new_cycles_count - old_cycles_count;
         }
         /* switch to next task */
+        set_kernel_stack((uintptr_t)next->esp);
         esp = next->esp;
         next->state = TASK_RUNNING;
         current_thread = next;
@@ -102,8 +115,11 @@ uintptr_t schedule_tick(registers_t *regs)
         /* keep executing the same stuff */
         esp = old_esp;
     }
+    DBPRINT("- esp: %x->%x\n", old_esp, esp);
 
     old_cycles_count = get_cycles_count();
+
+    irq_restore(irq_state);
 
     return esp;
 }

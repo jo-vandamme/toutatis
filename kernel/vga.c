@@ -173,3 +173,9 @@ void set_cursor_pos(uint16_t x, uint16_t y)
         outb(CURS_CTRL, LOW_BYTE);
         outb(CURS_DATA, pos);
 }
+
+void set_pos(uint16_t x, uint16_t y)
+{
+    xpos = x % COLS;
+    ypos = y % ROWS;
+}

@@ -28,7 +28,8 @@ inline void spin_unlock(uint8_t volatile *lock) {
 
 void set_kernel_stack(uintptr_t stack)
 {
-    tss_entry.esp0 = (uint32_t)stack; }
+    tss_entry.esp0 = (uint32_t)stack; 
+}
 
 void arch_init()
 {

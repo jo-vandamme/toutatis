@@ -165,7 +165,7 @@ void *alloc(const size_t size, size_t alignment, allocator_t *allocator)
     rb_node_t *node = remove_rbnode(&allocator->mem_tree, (void *)requested_size, &args); 
 
     if (!node) {
-        DBPRINT("- \033\012Expansion\033\017 ");
+        DBPRINT("- \033\012Expansion\033\017\n");
         /* expand the heap */
         uintptr_t old_end_address = allocator->end_address;
         expand(allocator->end_address + requested_size, allocator);
@@ -185,7 +185,6 @@ void *alloc(const size_t size, size_t alignment, allocator_t *allocator)
             && check_magic(left_footer->header)                   /* node isn't corrupted */
             && is_free(left_footer->header))                      /* node is free */
         {
-            DBPRINT("- Merging left ");
             /* no aligment (disables best fit) and match address */
             struct alloc_args args = { 0, (uintptr_t)block_to_rbnode(left_footer->header) };
             rb_node_t *left_node = remove_rbnode(&allocator->mem_tree, (void *)get_size(left_footer->header), &args);

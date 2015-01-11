@@ -10,14 +10,14 @@
 
 #define IRQ(x)          ((x) + 0x20)
 #define SYSCALL_VECTOR  0x80
-#define TIMER_FREQ      2000
+#define TIMER_FREQ      500
 #define IRQ_TIMER       0
 
 #define min(x, y)       ((x) < (y) ? (x) : (y))
 
 #define _DEBUG_
 #ifdef _DEBUG_
-    #define DBPRINT(...)    do { kprintf(DEBUG, __VA_ARGS__); } while (0)
+    #define DBPRINT(...)    do { kprintf(INFO, __VA_ARGS__); } while (0)
 #else
     #define DBPRINT(...)    do {} while (0)
 #endif
