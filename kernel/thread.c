@@ -3,13 +3,16 @@
 #include <kheap.h>
 #include <scheduler.h>
 #include <string.h>
+#include <paging.h>
 #include <thread.h>
 
-#define STACK_SIZE 0x1000
+#define STACK_SIZE 0x2000
 #define stack_top(s) ((s) + STACK_SIZE - 0x000)
 
 uint32_t num_threads = 0;
 extern thread_t *current_thread;
+extern page_dir_t *current_directory;
+extern page_dir_t *kernel_directory;
 
 static uint32_t request_thread_id()
 {
@@ -22,7 +25,7 @@ uint32_t get_num_threads()
     return num_threads;
 }
 
-static void create_kernel_thread(void)
+void create_kernel_thread(void)
 {
     irq_state_t irq_state = irq_save();
 
@@ -34,7 +37,7 @@ static void create_kernel_thread(void)
 
     thread->id = request_thread_id();
     thread->process = 0;
-    thread->state = TASK_READY;
+    thread->page_dir = current_directory;
 
     ++num_threads;
 
@@ -47,14 +50,10 @@ static void create_kernel_thread(void)
 
 uint32_t create_thread(process_t *process, entry_t entry, void *args, uint32_t priority, int user, int vm86)
 {
-    /* kernel thread */
-    if (current_thread == 0) {
-        create_kernel_thread();
-    }
-
     /* create thread */
     thread_t *thread = (thread_t *)kmalloc(sizeof(thread_t));
     if (!thread) {
+        DBPRINT("- !thread");
         return 0;
     }
     memset(thread, 0, sizeof(thread));
@@ -62,11 +61,13 @@ uint32_t create_thread(process_t *process, entry_t entry, void *args, uint32_t p
     /* setup the stack(s) */
     thread->kstack = (uintptr_t)kmalloc(STACK_SIZE);
     if (!thread->kstack) {
+        DBPRINT("- !kstack");
         return 0;
     }
     if (user) {
         thread->ustack = (uintptr_t)kmalloc(STACK_SIZE);
         if (!thread->ustack) {
+            DBPRINT("- !ustack");
             return 0;
         }
     } else {
@@ -114,10 +115,9 @@ uint32_t create_thread(process_t *process, entry_t entry, void *args, uint32_t p
     thread->ss = data_segment;
     thread->id = request_thread_id();
     thread->process = process;
-    thread->state = TASK_READY;
     /* thread's priority can't exceed its parent's priority */
     thread->priority = min(priority, process->priority); 
-    thread->page_dir = process->page_dir;
+    thread->page_dir = process ? process->page_dir : kernel_directory;
     thread->runtime = 0;
 
     irq_state_t irq_state = irq_save();

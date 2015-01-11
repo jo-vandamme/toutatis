@@ -34,8 +34,11 @@ mouse:  enabled=0
 #keyboard_paste_delay: 10000
 #keyboard_mapping: enabled=0, map=
 
-#clock: sync=realtime, time0=local
+clock: sync=realtime, time0=local
 #clock: sync=slowdown, time0=local
 #cpu: count=1, ips=1000000
+#clock: sync=none
+#cpu: count=1, ips=100000000
+cpu: reset_on_triple_fault=0
 
 display_library: sdl

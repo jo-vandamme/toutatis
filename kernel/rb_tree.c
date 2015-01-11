@@ -52,6 +52,7 @@ static inline rb_node_t *rotate(rb_node_t *root, const int dir)
 
 int insert_rbnode(rb_tree_t *tree, rb_node_t *node, const void *args)
 {
+    //assert_tree(tree->root);
     if (node == NULL) {
         return 0;
     }
@@ -140,6 +141,7 @@ int insert_rbnode(rb_tree_t *tree, rb_node_t *node, const void *args)
 
     /* make root black */
     paint_black(tree->root);
+    //assert_tree(tree->root);
     return 1;
 }
 
@@ -151,6 +153,7 @@ int insert_rbnode(rb_tree_t *tree, rb_node_t *node, const void *args)
 
 rb_node_t *remove_rbnode(rb_tree_t *tree, const void *data, const void *args)
 {
+    //assert_tree(tree->root);
     //print_tree(tree);
     if (tree->root != NULL) {
         rb_node_t head = { 0 };   /* dummy tree root */
@@ -276,8 +279,10 @@ rb_node_t *remove_rbnode(rb_tree_t *tree, const void *data, const void *args)
         if (tree->root != NULL) {
             paint_black(tree->root);
         }
+        //assert_tree(tree->root);
         return f;
     }
+    //assert_tree(tree->root);
     return NULL;
 }
 

@@ -261,7 +261,7 @@ uintptr_t irq_handler(registers_t *regs)
     }
 
     h = get_interrupt_handler(IRQ(regs->int_no));
-    if (!h && IRQ(regs->int_no) != 0) { /* XXX: IRQ ?? why */
+    if (!h && regs->int_no != 0) {
         kprintf(WARNING, "\033\014No handler for IRQ #%u\n\033\017", regs->int_no);
         return esp;
     }

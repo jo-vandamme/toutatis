@@ -3,10 +3,12 @@
 #include <paging.h>
 #include <kheap.h>
 #include <logging.h>
+#include <string.h>
 #include <scheduler.h>
 
 int scheduling = 0;
 thread_t *current_thread = 0;
+thread_t *kernel_thread = 0;
 
 extern page_dir_t *current_directory;
 
@@ -17,9 +19,11 @@ void schedule_thread(thread_t *thread)
     }
     irq_state_t irq_state = irq_save();
 
+    thread->state = TASK_READY;
     thread->next = thread->prev = 0;
 
-    if (!current_thread) {
+    if (!kernel_thread) {
+        kernel_thread = thread;
         current_thread = thread;
         current_thread->next = current_thread->prev = thread;
     } else {
@@ -34,7 +38,7 @@ void schedule_thread(thread_t *thread)
 
 void unschedule_thread(struct thread *thread)
 {
-    if (!thread) {
+    if (!thread || thread == kernel_thread) {
         return;
     }
     irq_state_t irq_state = irq_save();
@@ -49,6 +53,7 @@ void unschedule_thread(struct thread *thread)
     irq_restore(irq_state);
 }
 
+
 static void switch_next(void)
 {
     interrupt(IRQ(0));
@@ -56,10 +61,11 @@ static void switch_next(void)
 
 inline static thread_t *next_ready_thread(void)
 {
-    if (current_thread) {
-        return current_thread->next;
+    thread_t *thread = current_thread->next;
+    while (thread && thread->state != TASK_READY) {
+        thread = thread->next;
     }
-    return 0;
+    return thread;
 }
 
 uintptr_t schedule_tick(registers_t *regs)
@@ -104,7 +110,12 @@ uintptr_t schedule_tick(registers_t *regs)
 
 void scheduling_init(void)
 {
+    irq_state_t irq_state = irq_save();
+    if (!current_thread) {
+        create_kernel_thread();
+    }
     scheduling = 1;
+    irq_restore(irq_state);
 }
 
 void scheduling_finish(void)

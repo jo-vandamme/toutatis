@@ -202,52 +202,42 @@ void paging_finalize()
     memset(kernel_directory, 0, sizeof(page_dir_t));
     kernel_directory->entries_phys_addr = phys;
 
-    /* map some pages in the kernel heap area.
-     * here we call get_page but not alloc_page. This causes
-     * page tables to be created where necessary. We can't allocate frames
-     * yet because they need to be identity mapped first below, and yet we can't
-     * increase placement_address between identity mapping and enabling the heap! */
-    uint32_t virt = 0;
-    for (virt = KHEAP_START;
-         virt < KHEAP_START + KHEAP_INITIAL_SIZE;
-         virt += FRAME_SIZE) 
+    /* Preallocate every page table for kernel space. That way, PDE never change 
+     * and we don't have to update kernel pages across processes.
+     * This wastes 1MiB of memory but is the fastest way. The allocation will also
+     * increase placement_address.
+     */
+    uint32_t virt = (uintptr_t)&kernel_voffset;
+    for (; virt < 0xfffff000; virt += FRAME_SIZE)
     {
         get_page(virt, 1, kernel_directory);
     }
 
-    /* map kernel and bitmap (above 3GB) to low memory */
+    /* map kernel bitmap, and allocated structures (above 3GB) to low memory */
     phys = 0;
     virt = (uintptr_t)&kernel_voffset;
-    /* add a few frames to the placement address for the clone operation */
-    while (virt < placement_address + FRAME_SIZE*4)
+    while (virt < placement_address)
     {
-        //kprintf(INFO, "=> mapping %x to %x\n", virt, phys);
         map_page(get_page(virt, 1, kernel_directory), 0, 0, phys);
         phys += FRAME_SIZE;
         virt += FRAME_SIZE;
-    }
-
-    /* allocate pages for the kernel heap */
-    for (virt = KHEAP_START; 
-         virt < KHEAP_START + KHEAP_INITIAL_SIZE;
-         virt += FRAME_SIZE)
-    {
-        alloc_page(get_page(virt, 1, kernel_directory), 0, 1);
     }
 
     /* before we enable paging, we must register the page fault handler */
     attach_interrupt_handler(14, page_fault);
 
     /* switch to our page directory */
-    current_directory = clone_page_directory(kernel_directory);
-    switch_page_directory(current_directory);
-    kprintf(INFO, "[paging] Paging installed\n");
+    switch_page_directory(kernel_directory);
 
+    /* allocate pages for the kernel heap */
+    for (virt = KHEAP_START; virt < KHEAP_START + KHEAP_INITIAL_SIZE; virt += FRAME_SIZE)
+    {
+        alloc_page(get_page(virt, 1, kernel_directory), 0, 1);
+    }
+    
     /* initialize the kernel heap */
     kheap = create_mem_allocator(KHEAP_START, KHEAP_START + KHEAP_INITIAL_SIZE, 
             HEAP_MIN_SIZE, HEAP_MAX_SIZE, 0, 0, current_directory);
-    //kheap = create_heap(KHEAP_START, KHEAP_START + KHEAP_INITIAL_SIZE, 
-    //        KHEAP_START + HEAP_MAX_SIZE, 0, 0);
 
     kprintf(INFO, "[paging] %u frames (%uMB) - %u used (%uKB) - %u free (%uMB)\n",
         nframes, nframes * FRAME_SIZE / (1024 * 1024),
@@ -255,20 +245,18 @@ void paging_finalize()
         nframes - used_frames, (nframes - used_frames) * FRAME_SIZE / (1024 * 1024));
 }
 
-int switch_page_directory(page_dir_t *dir)
+page_dir_t *switch_page_directory(page_dir_t *dir)
 {
     if (!dir) {
         return 0;
     }
     current_directory = dir;
 
-    asm volatile ("mov %0, %%cr3\n"     /* set page directory base register (PDBR) */
-                  "mov %%cr0, %%eax\n"
-                  "orl $0x80000000, %%eax\n"
-                  "mov %%eax, %%cr0\n"   /* enable paging */
-                  :: "r"(dir->entries_phys_addr)
-                  : "%eax");
-    return 1;
+    page_dir_t *old_dir;
+    asm volatile ("mov %%cr3, %0\n" : "=r"(old_dir));
+    asm volatile ("mov %0, %%cr3\n" :: "r"(dir->entries_phys_addr));
+
+    return old_dir;
 }
 
 void invalidate_page_tables_at(uintptr_t addr)
@@ -318,6 +306,7 @@ static page_table_t *clone_page_table(page_table_t *table, uintptr_t *phys)
 
 page_dir_t *clone_page_directory(page_dir_t *dir)
 {
+    irq_state_t irq_state = irq_save();
     uintptr_t phys;
     page_dir_t *clone = (page_dir_t *)kmalloc_ap(sizeof(page_dir_t), &phys);
     memset(clone, 0, sizeof(page_dir_t));
@@ -329,13 +318,13 @@ page_dir_t *clone_page_directory(page_dir_t *dir)
             continue; 
         }
         if (kernel_directory->tables[i] == dir->tables[i]) {
-            kprintf(INFO, "linking dir->tables[%x] = %x\n", i, dir->tables[i]);
+            //kprintf(INFO, "linking dir->tables[%x] = %x\n", i, dir->tables[i]);
             clone->tables[i] = dir->tables[i];
             clone->entries[i] = dir->entries[i];
         }
         else {
             uintptr_t phys;
-            kprintf(INFO, "cloning table dir->tables[%x]\n", i);
+            //kprintf(INFO, "cloning table dir->tables[%x]\n", i);
             clone->tables[i] = clone_page_table(dir->tables[i], &phys);
             //clone->entries[i].present = 1;
             //clone->entries[i].read_write = 1;
@@ -344,6 +333,7 @@ page_dir_t *clone_page_directory(page_dir_t *dir)
             clone->entries[i].page_table_base = phys >> 12;
         }
     }
+    irq_restore(irq_state);
     return clone;
 }
 

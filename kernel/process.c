@@ -5,6 +5,7 @@
 #include <process.h>
 
 extern page_dir_t *kernel_directory;
+extern page_dir_t *current_directory;
 
 static uint32_t request_process_id()
 {
@@ -15,9 +16,7 @@ static uint32_t request_process_id()
 process_t *create_process(const char name[64], uint32_t priority)
 {
     irq_state_t irq_state = irq_save();
-
     process_t *process = (process_t *)kmalloc(sizeof(process_t));
-
     irq_restore(irq_state);
 
     if (!process) {
@@ -25,7 +24,7 @@ process_t *create_process(const char name[64], uint32_t priority)
     }
 
     strncpy(process->name, name, sizeof(name));
-    process->page_dir = clone_page_directory(kernel_directory);
+    process->page_dir = clone_page_directory(current_directory);
 
     process->id = request_process_id();
     process->priority = priority;
@@ -33,3 +32,9 @@ process_t *create_process(const char name[64], uint32_t priority)
     return process;
 }
 
+void destroy_process(process_t *process)
+{
+    if (process) {
+        kfree(process);
+    }
+}

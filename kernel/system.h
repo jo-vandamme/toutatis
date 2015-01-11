@@ -2,6 +2,7 @@
 #define __KERNEL_SYSTEM_H__
 
 #include <types.h>
+#include <logging.h>
 
 #define asm __asm__
 #define volatile __volatile__
@@ -9,7 +10,7 @@
 
 #define IRQ(x)          ((x) + 0x20)
 #define SYSCALL_VECTOR  0x80
-#define TIMER_FREQ      1000
+#define TIMER_FREQ      2000
 #define IRQ_TIMER       0
 
 #define min(x, y)       ((x) < (y) ? (x) : (y))
@@ -81,6 +82,7 @@ inline static void halt()
 
 inline static void stop()
 {
+    asm volatile("cli");
     while (1) { halt(); }
 }
 

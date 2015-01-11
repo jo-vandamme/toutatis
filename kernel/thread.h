@@ -29,4 +29,6 @@ void destroy_thread(thread_t *thread);
 void thread_exit(void);
 uint32_t get_num_threads(void);
 
+void create_kernel_thread(void);
+
 #endif

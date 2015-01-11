@@ -42,7 +42,7 @@ bochs_iso:
 	@cd bin && bochs -q -f bochsrc_iso.bxrc
 
 qemu_iso:
-	@qemu-system-i386 -cdrom bin/toutatis.iso -k en-us -monitor stdio -serial /dev/tty -vga std -m 1024
+	@qemu-system-i386 -cdrom bin/toutatis.iso -k en-us -monitor stdio -serial /dev/tty -vga std -m 1024 -no-reboot
 
 isoq: iso qemu_iso
 

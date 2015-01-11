@@ -70,7 +70,7 @@ void paging_init();
 void paging_finalize();
 void paging_mark_reserved(uintptr_t address);
 
-int switch_page_directory(page_dir_t *dir);
+page_dir_t *switch_page_directory(page_dir_t *dir);
 void invalidate_page_tables_at(uintptr_t addr);
 page_dir_t *clone_page_directory(page_dir_t *dir);
 

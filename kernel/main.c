@@ -43,8 +43,9 @@ void func1(unsigned int off)
 void func2(unsigned int off)
 {
     uint16_t *video = (uint16_t *)(0xc00b8000 + off*2);
-    uint32_t i;
-    for (i = 0; i < 100000; ++i)
+    uint32_t i = 0;
+    //for (i = 0; i < 100000; ++i)
+    for (;;)
         *video = (uint16_t)alph[i++ % sizeof(alph)] | 0x0f00;
 }
 
@@ -140,34 +141,48 @@ void main(uint32_t magic, struct multiboot_info *mbi,
 
     keyboard_init();
 
+    process_t *proc1 = create_process("Process 1", 1);
+    process_t *proc2 = create_process("Process 2", 1);
+    process_t *proc3 = create_process("Process 3", 1);
+
+    process_t *procs[] = { proc1, proc2, proc3 };
+
+    unsigned int k = 0;
     unsigned int off = 0;
-    process_t *proc = create_process("Process 1", 1);
+    for (k = 0; k < 50; ++k) {
+        if (!create_thread(procs[k % 3],
+                           func2, (void *)(off + 80*2), 
+                           1, 0, 0)) {
+            kprintf(INFO, "Oups\n");
+            stop();
+        }
+        off += 2;
+    }
 
     //create_thread(proc, func3, (void *)0, 1, 1, 1);
 
-    unsigned int k = 0, i = 0;
-    while (mem_used(kheap) < HEAP_MAX_SIZE * 90/100) {
-
+    k = 0;
+    unsigned int i = 0;
+    for (;;) {
         uint16_t *video = (uint16_t *)(0xc00b8000 + 80);
         *video = (uint16_t)alph[i++ % sizeof(alph)] | 0x0f00;
         
-        if (k % 10 == 0) {
+        /*
+        if (k % 1000 == 0) {
             kprintf(INFO, "mem used: %x num threads:%d\n", mem_used(kheap), get_num_threads());
         }
-        
-        if (!create_thread(proc, func2, (void *)(off + 80*2), 1, 0, 0)) {
+        if (!create_thread(proc1, func2, (void *)(off + 80*2), 1, 0, 0)) {
             kprintf(INFO, "Oups\n");
             break;
         }
         off += 2;
         off %= (60 * (25-2));
+        */
         if (keyboard_lastchar() == 'u') {
-            create_thread(proc, func1, (void *)0, 1, 1, 0);
+            create_thread(proc1, func1, (void *)0, 1, 1, 0);
         }
         ++k;
     }
-    irq_disable();
-    kprintf(INFO, "End\n");
 
     serial_terminate();
     stop();
